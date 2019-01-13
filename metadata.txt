@@ -2,7 +2,7 @@
 
 
 [general]
-name=CLUZ
+name=CLUZ3
 qgisMinimumVersion=3.0
 description=CLUZ for QGIS
 about=The CLUZ (Conservation Land-Use Zoning) plugin lets people design protected area networks and other conservation landscapes and seascapes through on-screen conservation planning. It also acts as an interface for the Marxan software package.
