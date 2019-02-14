@@ -20,8 +20,7 @@
 
 from qgis.core import QgsVectorLayer
 from qgis.PyQt.QtCore import QVariant
-from qgis.core import QgsField, QgsApplication, QgsProcessingFeedback
-
+from qgis.core import QgsField, QgsApplication, QgsProcessingFeedback, QgsProcessingException
 
 import processing
 from processing.core.Processing import Processing
@@ -30,31 +29,35 @@ Processing.initialize()
 import os
 import csv
 
-from .cluz_messages import *
-from .cluz_make_file_dicts import *
+from .cluz_messages import infoMessage, warningMessage, criticalMessage, makeProgressBar, clearProgressBar
+from .cluz_make_file_dicts import removePrefixMakeIDValue, makePuvspr2DatFile
 
 
 def makeVecAddAbundDict(setupObject, layerList, idFieldName, convFactor):
+    addAbundDict = dict()
+    addFeatIDSet = set()
+    errorLayerList = list()
+
     puLayer = QgsVectorLayer(setupObject.puPath, 'Planning units', 'ogr')
 
-    layerNumber = 1
     for aLayer in layerList:
         layerGeomType = aLayer.geometryType()
-        infoMessage('Processing files:', 'intersecting layer ' + str(layerNumber) + '...')
-        outputLayer = makeIntersectionOutputLayer(puLayer, aLayer)
+        layerName = aLayer.name()
+        infoMessage('Processing files:', 'intersecting layer ' + layerName + '...')
+        try:
+            outputLayer = makeIntersectionOutputLayer(puLayer, aLayer)
 
-        if layerGeomType == 1:
-            addAbundDict, addFeatIDSet, attributeFeatureError = makeAddAbundDictFromLineVecFile(setupObject, outputLayer, idFieldName, convFactor)
-        elif layerGeomType == 2:
-            addAbundDict, addFeatIDSet, attributeFeatureError = makeAddAbundDictFromPolyVecFile(setupObject, outputLayer, idFieldName, convFactor)
-            
-        if attributeFeatureError:
-            warningMessage('Layer warning: ', 'layer ' + str(aLayer.name()) + ' contains at least one feature that produces fragments with no spatial characteristics when intersected with the planning units.')
+            if layerGeomType == 1:
+                addAbundDict, addFeatIDSet = makeAddAbundDictFromLineVecFile(setupObject, aLayer, outputLayer, idFieldName, convFactor, addAbundDict, addFeatIDSet)
+            elif layerGeomType == 2:
+                addAbundDict, addFeatIDSet = makeAddAbundDictFromPolyVecFile(setupObject, aLayer, outputLayer, idFieldName, convFactor, addAbundDict, addFeatIDSet)
+        except QgsProcessingException:
+            errorLayerList.append(layerName)
 
     addFeatIDList = list(addFeatIDSet)
     addFeatIDList.sort()
 
-    return addAbundDict, addFeatIDList
+    return addAbundDict, addFeatIDList, errorLayerList
 
 
 def makeIntersectionOutputLayer(puLayer, aLayer):
@@ -66,9 +69,7 @@ def makeIntersectionOutputLayer(puLayer, aLayer):
     return outputLayer
 
 
-def makeAddAbundDictFromLineVecFile(setupObject, outputLayer, idFieldName, convFactor):
-    addAbundDict = dict()
-    addFeatIDSet = set()
+def makeAddAbundDictFromLineVecFile(setupObject, aLayer, outputLayer, idFieldName, convFactor, addAbundDict, addFeatIDSet):
     decPrec = setupObject.decimalPlaces
 
     outputIDField = outputLayer.fields().indexFromName('Unit_ID')
@@ -91,7 +92,7 @@ def makeAddAbundDictFromLineVecFile(setupObject, outputLayer, idFieldName, convF
             try:
                 puAddAbundDict = addAbundDict[unitID]
             except KeyError:
-                puAddAbundDict = {}
+                puAddAbundDict = dict()
             try:
                 addAmount = puAddAbundDict[featID]
             except KeyError:
@@ -102,12 +103,13 @@ def makeAddAbundDictFromLineVecFile(setupObject, outputLayer, idFieldName, convF
         else:
             attributeFeatureError = True
 
-    return addAbundDict, addFeatIDSet, attributeFeatureError
+    if attributeFeatureError:
+        warningMessage('Layer warning: ', 'layer ' + str(aLayer.name()) + ' contains at least one feature that produces fragments with no spatial characteristics when intersected with the planning units.')
+
+    return addAbundDict, addFeatIDSet
 
 
-def makeAddAbundDictFromPolyVecFile(setupObject, outputLayer, idFieldName, convFactor):
-    addAbundDict = dict()
-    addFeatIDSet = set()
+def makeAddAbundDictFromPolyVecFile(setupObject, aLayer, outputLayer, idFieldName, convFactor, addAbundDict, addFeatIDSet):
     decPrec = setupObject.decimalPlaces
 
     outputIDField = outputLayer.fields().indexFromName('Unit_ID')
@@ -130,7 +132,7 @@ def makeAddAbundDictFromPolyVecFile(setupObject, outputLayer, idFieldName, convF
             try:
                 puAddAbundDict = addAbundDict[unitID]
             except KeyError:
-                puAddAbundDict = {}
+                puAddAbundDict = dict()
             try:
                 addAmount = puAddAbundDict[featID]
             except KeyError:
@@ -141,7 +143,10 @@ def makeAddAbundDictFromPolyVecFile(setupObject, outputLayer, idFieldName, convF
         else:
             attributeFeatureError = True
 
-    return addAbundDict, addFeatIDSet, attributeFeatureError
+    if attributeFeatureError:
+        warningMessage('Layer warning: ', 'layer ' + str(aLayer.name()) + ' contains at least one feature that produces fragments with no spatial characteristics when intersected with the planning units.')
+
+    return addAbundDict, addFeatIDSet
 
 
 def calcFeatLineLengthInPU(outputFeature, convFactor, decPrec):

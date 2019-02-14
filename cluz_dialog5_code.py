@@ -83,22 +83,9 @@ def makeMarxanRawParameterDict(MarxanDialog, setupObject):
     marxanRawParameterDict['extraOutputsBool'] = extraOutputsBool
     marxanRawParameterDict['numParallelAnalyses'] = numParallelAnalyses
     marxanRawParameterDict['outputName'] = outputName
-
     marxanRawParameterDict['marxanPath'] = setupObject.marxanPath
 
     return marxanRawParameterDict
-
-
-def returnMarxanInputValuesOKBool(marxanParameterDict):
-    marxanInputValuesOKBool = checkNumIterParaDict(marxanParameterDict['numIterString'])
-    marxanInputValuesOKBool = checkNumRunsParaDict(marxanParameterDict['numRunString'], marxanInputValuesOKBool)
-    marxanInputValuesOKBool = checkBlmValueParaDict(marxanParameterDict['blmValueString'], marxanInputValuesOKBool)
-    marxanInputValuesOKBool = checkMissingPropValueParaDict(marxanParameterDict['missingPropString'], marxanInputValuesOKBool)
-    marxanInputValuesOKBool = checkInitialPropValueParaDict(marxanParameterDict['initialPropString'], marxanInputValuesOKBool)
-    marxanInputValuesOKBool = checkNumParallelAnalysesValueParaDict(marxanParameterDict['numRunString'], marxanParameterDict['numParallelAnalyses'], marxanInputValuesOKBool)
-    marxanInputValuesOKBool = checkPermissionToUseMarxanFolderParaDict(marxanParameterDict, marxanInputValuesOKBool)
-
-    return marxanInputValuesOKBool
 
 
 def makeMarxanParameterDict(setupObject, marxanRawParameterDict):
@@ -123,13 +110,44 @@ def makeMarxanParameterDict(setupObject, marxanRawParameterDict):
     return marxanParameterDict
 
 
+def returnMarxanInputValuesOKBool(marxanParameterDict):
+    marxanInputValuesOKBool = checkNumIterParaDict(marxanParameterDict['numIterString'])
+    marxanInputValuesOKBool = checkNumRunsParaDict(marxanParameterDict['numRunString'], marxanInputValuesOKBool)
+    marxanInputValuesOKBool = checkBlmValueParaDict(marxanParameterDict['blmValueString'], marxanInputValuesOKBool)
+    marxanInputValuesOKBool = checkMissingPropValueParaDict(marxanParameterDict['missingPropString'], marxanInputValuesOKBool)
+    marxanInputValuesOKBool = checkInitialPropValueParaDict(marxanParameterDict['initialPropString'], marxanInputValuesOKBool)
+    marxanInputValuesOKBool = checkNumParallelAnalysesValueParaDict(marxanParameterDict['numRunString'], marxanParameterDict['numParallelAnalyses'], marxanInputValuesOKBool)
+    marxanInputValuesOKBool = checkPermissionToUseMarxanFolderParaDict(marxanParameterDict, marxanInputValuesOKBool)
+
+    return marxanInputValuesOKBool
+
+
+def checkMarxanFilesExistBool(setupObject):
+    marxanFilesExistBool = True
+    puDatPath = setupObject.inputPath + os.sep + 'pu.dat'
+    specDatPath = setupObject.inputPath + os.sep + 'spec.dat'
+    puvspr2DatPath = setupObject.inputPath + os.sep + 'puvspr2.dat'
+
+    if os.path.exists(puDatPath) is False:
+        warningMessage('Missing Marxan file','There is no pu.dat file in the specified Marxan input folder. Please create the file using the Create Marxan input files function')
+        marxanFilesExistBool = False
+    if os.path.exists(specDatPath) is False:
+        warningMessage('Missing Marxan file','There is no spec.dat file in the specified Marxan input folder. Please create the file using the Create Marxan input files function')
+        marxanFilesExistBool = False
+    if os.path.exists(puvspr2DatPath) is False:
+        warningMessage('Missing Marxan file','There is no puvspr2.dat file in the specified Marxan input folder. Please create one')
+        marxanFilesExistBool = False
+
+    return marxanFilesExistBool
+
+
 def launchSingleMarxanAnalysis(setupObject, marxanParameterDict):
     makeMarxanInputFile(setupObject, marxanParameterDict)
     marxanBatFileName = makeMarxanBatFile(setupObject)
     subprocess.Popen([marxanBatFileName])
     waitingForMarxan(setupObject, marxanParameterDict['outputName'])
-    bestOutputFile = setupObject.outputPath + os.sep + marxanParameterDict['outputName'] + "_best.txt"
-    summedOutputFile = setupObject.outputPath + os.sep + marxanParameterDict['outputName'] + "_ssoln.txt"
+    bestOutputFile = setupObject.outputPath + os.sep + marxanParameterDict['outputName'] + '_best.txt'
+    summedOutputFile = setupObject.outputPath + os.sep + marxanParameterDict['outputName'] + '_ssoln.txt'
 
     return bestOutputFile, summedOutputFile
 
@@ -148,10 +166,10 @@ def launchMultiMarxanAnalysis(setupObject, marxanParameterDict):
     waitingForParallelMarxan(setupObject, parallelAnalysesDetailsList)
 
     makeBestParallelFile(setupObject, combinedOutputName, parallelAnalysesDetailsList)
-    bestOutputFile = setupObject.outputPath + os.sep + combinedOutputName + "_best.txt"
+    bestOutputFile = setupObject.outputPath + os.sep + combinedOutputName + '_best.txt'
 
     makeSummedParallelFile(setupObject, combinedOutputName, parallelAnalysesDetailsList)
-    summedOutputFile = setupObject.outputPath + os.sep + combinedOutputName + "_ssoln.txt"
+    summedOutputFile = setupObject.outputPath + os.sep + combinedOutputName + '_ssoln.txt'
 
     return bestOutputFile, summedOutputFile
 
@@ -420,7 +438,7 @@ def makeCalibrateMarxanParameterDict(setupObject, calibrateRawParameterDict, num
     marxanPath = setupObject.marxanPath
     marxanFolderName = os.path.dirname(marxanPath)
     marxanSetupPath = str(marxanFolderName) + os.sep + 'input.dat'
-    marxanParameterDict["marxanPath"] = marxanPath
-    marxanParameterDict["marxanSetupPath"] = marxanSetupPath
+    marxanParameterDict['marxanPath'] = marxanPath
+    marxanParameterDict['marxanSetupPath'] = marxanSetupPath
 
     return marxanParameterDict

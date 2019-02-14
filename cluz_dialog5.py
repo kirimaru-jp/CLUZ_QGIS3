@@ -29,7 +29,8 @@ from cluz_form_load import Ui_loadDialog
 from cluz_form_calibrate import Ui_calibrateDialog
 
 from .cluz_setup import updateClzSetupFile
-from .cluz_dialog5_code import check_LoadSummedMarxanResult, setInitialValuesCalibrateDialog, makeMarxanParameterDict, makeMarxanCalibrateRawParameterDict, check_LoadBestMarxanResult, makeMarxanRawParameterDict, returnMarxanInputValuesOKBool, setDialogParameters, checkSimpleCalibrateAnalysisParameters, launchSingleMarxanAnalysis, launchMultiMarxanAnalysis, returnInitialFieldNames
+from .cluz_dialog5_code import check_LoadSummedMarxanResult, setInitialValuesCalibrateDialog, makeMarxanParameterDict, makeMarxanCalibrateRawParameterDict, check_LoadBestMarxanResult, makeMarxanRawParameterDict
+from .cluz_dialog5_code import returnMarxanInputValuesOKBool, setDialogParameters, checkSimpleCalibrateAnalysisParameters, launchSingleMarxanAnalysis, launchMultiMarxanAnalysis, returnInitialFieldNames, checkMarxanFilesExistBool
 from .cluz_display import displayGraduatedLayer, removePreviousMarxanLayers, reloadPULayer, displayBestOutput
 from .cluz_functions5 import createPuDatFile, marxanUpdateSetupObject, addBestMarxanOutputToPUShapefile, createBoundDatFile, createSpecDatFile, addSummedMarxanOutputToPUShapefile
 from .cluz_messages import criticalMessage, successMessage
@@ -103,13 +104,13 @@ class marxanDialog(QDialog, Ui_marxanDialog):
     def runMarxan(self, setupObject, targetsMetAction):
         marxanRawParameterDict = makeMarxanRawParameterDict(self, setupObject)
         marxanInputValuesOKBool = returnMarxanInputValuesOKBool(marxanRawParameterDict)
-        if marxanInputValuesOKBool:
+        marxanFilesExistBool = checkMarxanFilesExistBool(setupObject)
+        if marxanInputValuesOKBool and marxanFilesExistBool:
             marxanParameterDict = makeMarxanParameterDict(setupObject, marxanRawParameterDict)
             createSpecDatFile(setupObject)
 
             setupObject = marxanUpdateSetupObject(setupObject, marxanParameterDict)
-            saveSuccessfulBool = True
-            updateClzSetupFile(setupObject, saveSuccessfulBool)
+            updateClzSetupFile(setupObject, True) #saveSuccessfulBool = True
             self.close()
 
             bestLayerName = 'Best (' + marxanParameterDict['outputName'] + ')' #OutputName is overwritten in parallel analyses, so specifying these names here
@@ -159,6 +160,7 @@ class loadDialog(QDialog, Ui_loadDialog):
         (bestPathNameText, fileTypeDetailsText) = QFileDialog.getOpenFileName(self, 'Select Marxan best portfolio output', '*.txt')
         if bestPathNameText is None:
             self.bestLineEdit.setText(bestPathNameText)
+
 
     def setSummedPath(self):
         (summedPathNameText, fileTypeDetailsText) = QFileDialog.getOpenFileName(self, 'Select Marxan summed solution output', '*.txt')

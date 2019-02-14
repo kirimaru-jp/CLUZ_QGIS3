@@ -195,7 +195,7 @@ def checkConvFactorConvertVec(ConvertVecDialog):
 def create_UpdateAbundDataFromVecFile(ConvertVecDialog, setupObject, layerList):
     idFieldName = ConvertVecDialog.idfieldLineEdit.text()
     convFactor = float(ConvertVecDialog.convLineEdit.text())
-    addAbundDict, addFeatIDList = makeVecAddAbundDict(setupObject, layerList, idFieldName, convFactor)
+    addAbundDict, addFeatIDList, errorLayerList = makeVecAddAbundDict(setupObject, layerList, idFieldName, convFactor)
     existingIDSet = set(addFeatIDList).intersection(set(setupObject.targetDict.keys()))
     if len(existingIDSet) > 0:
         produceWarningMessageAboutFeatsAlreadyInAbundTab(ConvertVecDialog, existingIDSet)
@@ -209,7 +209,9 @@ def create_UpdateAbundDataFromVecFile(ConvertVecDialog, setupObject, layerList):
         addFeaturesToTargetCsvFile(setupObject, addAbundDict, addFeatIDList)
         setupObject.targetDict = makeTargetDict(setupObject)
         ConvertVecDialog.close()
-        
+
+    return errorLayerList
+
         
 def produceWarningMessageAboutFeatsAlreadyInAbundTab(ConvertVecDialog, existingIDSet):
     ConvertVecDialog.close()
@@ -218,6 +220,16 @@ def produceWarningMessageAboutFeatsAlreadyInAbundTab(ConvertVecDialog, existingI
         listText += str(aID) + ', '
     finalListText = listText[0: -2]
     warningMessage('Existing features', 'The abundance table already contains features with ID values of ' + finalListText + '. This process will terminate without adding the new values.')
+
+
+def makeErrorLayerString(errorLayerList):
+    rawErrorLayerString = 'please check your input data, as QGIS was unable to intersect the planning unit layer with the following data layers: '
+    for aLayerName in errorLayerList:
+        rawErrorLayerString += aLayerName + ' ,'
+
+    errorLayerString = rawErrorLayerString[0:-2]
+
+    return errorLayerString
 
 
 ###############################Import csv data ##############################

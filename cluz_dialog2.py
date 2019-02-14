@@ -29,7 +29,9 @@ from cluz_form_convert_vec import Ui_convertVecDialog
 from cluz_form_convert_csv import Ui_convertCsvDialog
 
 from .cluz_functions2 import makeCsvAddAbundDict
-from .cluz_dialog2_code import check_MakeNewCLUZFiles, checkAddLayerListConvertVecDialog, checkLayerFactor, check_AddCsvFilePath, checkConvFactor, create_UpdateAbundDataFromVecFile, checkConvFactorConvertVec, addCSVDictToAbundDict_UpdatePuvspr2TargetFiles, checkLayerFactorConvertVec
+from .cluz_dialog2_code import check_MakeNewCLUZFiles, checkAddLayerListConvertVecDialog, checkLayerFactor, check_AddCsvFilePath, checkConvFactor, create_UpdateAbundDataFromVecFile
+from .cluz_dialog2_code import checkConvFactorConvertVec, addCSVDictToAbundDict_UpdatePuvspr2TargetFiles, checkLayerFactorConvertVec, makeErrorLayerString
+from .cluz_messages import criticalMessage
 
 
 class createDialog(QDialog, Ui_createDialog):
@@ -88,7 +90,10 @@ class convertVecDialog(QDialog, Ui_convertVecDialog):
         convFactorCheck = checkConvFactorConvertVec(self)
 
         if layerFactorCheck and convFactorCheck:
-            create_UpdateAbundDataFromVecFile(self, setupObject, layerList)
+            errorLayerList = create_UpdateAbundDataFromVecFile(self, setupObject, layerList)
+            if len(errorLayerList) > 0:
+                errorLayerString = makeErrorLayerString(errorLayerList)
+                criticalMessage('Error processing layers', errorLayerString)
 
 
 class convertCsvDialog(QDialog, Ui_convertCsvDialog):

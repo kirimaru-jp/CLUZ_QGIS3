@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'cluz_form_convert_csv.ui'
+# Form implementation generated from reading ui file 'C:\Users\Bob\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\cluz3\forms\cluz_form_convert_csv.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -13,11 +13,6 @@ class Ui_convertCsvDialog(object):
         convertCsvDialog.setObjectName("convertCsvDialog")
         convertCsvDialog.resize(730, 380)
         convertCsvDialog.setMinimumSize(QtCore.QSize(730, 380))
-        self.logoLabel = QtWidgets.QLabel(convertCsvDialog)
-        self.logoLabel.setGeometry(QtCore.QRect(-10, -10, 131, 401))
-        self.logoLabel.setText("")
-        self.logoLabel.setPixmap(QtGui.QPixmap(":/plugins/Cluz/icons/icons/setup_logo.png"))
-        self.logoLabel.setObjectName("logoLabel")
         self.csvLabel = QtWidgets.QLabel(convertCsvDialog)
         self.csvLabel.setGeometry(QtCore.QRect(140, 20, 491, 16))
         self.csvLabel.setObjectName("csvLabel")
@@ -91,6 +86,11 @@ class Ui_convertCsvDialog(object):
         self.browseButton.setMinimumSize(QtCore.QSize(0, 22))
         self.browseButton.setObjectName("browseButton")
         self.horizontalLayout_4.addWidget(self.browseButton)
+        self.setupIconLabel = QtWidgets.QLabel(convertCsvDialog)
+        self.setupIconLabel.setGeometry(QtCore.QRect(-10, 0, 120, 380))
+        self.setupIconLabel.setText("")
+        self.setupIconLabel.setPixmap(QtGui.QPixmap(":/images/images/setup_logo.png"))
+        self.setupIconLabel.setObjectName("setupIconLabel")
 
         self.retranslateUi(convertCsvDialog)
         self.cancelButton.clicked.connect(convertCsvDialog.close)

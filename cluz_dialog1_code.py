@@ -41,7 +41,6 @@ def addSetupDialogTextFromSetupObject(setupDialog, setupObject):
 
 def loadSetupFileCode(setupDialog, setupObject, setupFilePath):
     setupObject = updateSetupObjectFromSetupFile(setupObject, setupFilePath)
-    setupObject = checkStatusObjectValues(setupObject)
 
     if setupObject.setupStatus == 'values_checked':
         setupObject = createAndCheckCLUZFiles(setupObject)
@@ -108,13 +107,13 @@ def saveAsSetupFileCode(setupDialog, setupObject, newSetupFilePath):
     setupObject.setupPath = newSetupFilePath
 
     setupObject = checkStatusObjectValues(setupObject)
-    if setupObject.setupStatus == "values_checked":
+    if setupObject.setupStatus == 'values_checked':
         setupObject = createAndCheckCLUZFiles(setupObject)
-    if setupObject.setupStatus == "files_checked":
+    if setupObject.setupStatus == 'files_checked':
         saveSuccessfulBool = True
         saveSuccessfulBool = updateClzSetupFile(setupObject, saveSuccessfulBool)
         if saveSuccessfulBool:
-            setupPathLabelText = "Setup file location: " + str(newSetupFilePath)
+            setupPathLabelText = 'Setup file location: ' + str(newSetupFilePath)
             setupDialog.setupPathLabel.setText(setupPathLabelText)
             checkAddPULayer(setupObject)
 

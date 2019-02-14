@@ -75,6 +75,7 @@ def convertFeatNameByChangingIncompatibleTextCharacters(rawFeatName):
 
     return changeBool, featName
 
+
 def createPuDatFile(setupObject):
     decPrec = setupObject.decimalPlaces
     puDatPathName = setupObject.inputPath + os.sep + 'pu.dat'

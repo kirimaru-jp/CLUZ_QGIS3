@@ -30,8 +30,8 @@ from qgis.utils import iface
 
 
 def infoMessage(titleText, mainText):
-    iface.messageBar().pushInfo(titleText, mainText)
     iface.messageBar().pushMessage(titleText, mainText, level=Qgis.Info)
+
 
 def warningMessage(titleText, mainText):
     iface.messageBar().pushMessage(titleText, mainText, level=Qgis.Warning, duration=0)
@@ -40,8 +40,10 @@ def warningMessage(titleText, mainText):
 def criticalMessage(titleText, mainText):
     iface.messageBar().pushMessage(titleText, mainText, level=Qgis.Critical, duration=0)
 
+
 def successMessage(titleText, mainText):
     iface.messageBar().pushMessage(titleText, mainText, level=Qgis.Success)
+
 
 def makeProgressBar(progressText):
     iface.messageBar().clearWidgets()
@@ -55,11 +57,9 @@ def makeProgressBar(progressText):
 
     return progressBar
 
+
 def clearProgressBar():
     iface.messageBar().clearWidgets()
-
-
-#############SETUP_FILE_MESSAGES#############
 
 
 def emptyPolgyonPUIDSetErrorMessage(emptyPolgyonPUIDSet):
@@ -87,6 +87,7 @@ def runYesCancelWarningDialogBox(titleText, mainText):
         warningBool = False
 
     return warningBool
+
 
 
 

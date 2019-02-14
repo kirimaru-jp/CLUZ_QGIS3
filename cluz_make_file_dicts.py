@@ -96,7 +96,7 @@ def makeTargetDialogRowList(setupObject):
     targetDialogDict = dict()
     for colName in targetFileHeaderList:
         rawValueList = rawTargetDialogDict[colName]
-        valueList, ColTypeIntOrFloat = formatRawValueList_IdentifyNumericalCols(setupObject, colName, rawValueList)
+        valueList, ColTypeIntOrFloat = formatRawValueList_IdentifyNumericalCols(setupObject, rawValueList)
         targetDialogDict[colName] = valueList
         if ColTypeIntOrFloat:
             numericColsList.append(colName.lower()) # Turned to lower case to allow later comparisons
@@ -136,27 +136,31 @@ def returnTargetFileDataRowCount(setupObject):
 def makeRawTargetDialogDict(setupObject):
     rawTargetDialogDict = dict()
     targetCSVFilePath = setupObject.targetPath
-    try:
+    with open(targetCSVFilePath, 'rt') as f:
+        targetReader = csv.reader(f)
+        targetFileHeaderList = next(targetReader)
+        for aRow in targetReader:
+            for aCol in range(0, len(targetFileHeaderList)):
+                colName = targetFileHeaderList[aCol]
+                try:
+                    rawColumnValuesList = rawTargetDialogDict[colName]
+                except KeyError:
+                    rawColumnValuesList = list()
+                rawColumnValuesList.append(aRow[aCol])
+                rawTargetDialogDict[colName] = rawColumnValuesList
+
+    if len(rawTargetDialogDict) == 0:
         with open(targetCSVFilePath, 'rt') as f:
             targetReader = csv.reader(f)
             targetFileHeaderList = next(targetReader)
-
-            for aRow in targetReader:
-                for aCol in range(0, len(targetFileHeaderList)):
-                    colName = targetFileHeaderList[aCol]
-                    try:
-                        rawColumnValuesList = rawTargetDialogDict[colName]
-                    except KeyError:
-                        rawColumnValuesList = list()
-                    rawColumnValuesList.append(aRow[aCol])
-                    rawTargetDialogDict[colName] = rawColumnValuesList
-    except ValueError:
-        rawTargetDialogDict = 'blank'
+            for aCol in range(0, len(targetFileHeaderList)):
+                colName = targetFileHeaderList[aCol]
+                rawTargetDialogDict[colName] = list()
 
     return rawTargetDialogDict
 
 
-def formatRawValueList_IdentifyNumericalCols(setupObject, colName, rawValueList):
+def formatRawValueList_IdentifyNumericalCols(setupObject, rawValueList):
     countIntList = list()
     countFloatList = list()
     ColTypeIntOrFloat = False
@@ -399,19 +403,41 @@ def addFeaturesToTargetCsvFile(setupObject, addAbundDict, featIDList):
 
         with open(setupObject.targetPath, 'rt') as f:
             reader = csv.reader(f)
+            targetFileHeaderList = next(reader)
+            tempTargetWriter.writerow(targetFileHeaderList)
             for row in reader:
                 tempTargetWriter.writerow(row)
 
             addTargetList = list(addTargetDict.keys())
             addTargetList.sort()
             for featID in addTargetList:
-                (featCon, featTotal) = addTargetDict[featID]
-                row = [str(featID), 'blank', '0', '0', '0', str(featCon), str(featTotal), '-1']
+                row = makeNewRowTargetCSVFromAddTargetList(targetFileHeaderList, addTargetDict, featID)
                 tempTargetWriter.writerow(row)
 
     tempTargetFile.close()
     os.remove(setupObject.targetPath)
     os.rename(tempTargetPath, setupObject.targetPath)
+
+
+def makeNewRowTargetCSVFromAddTargetList(targetFileHeaderList, addTargetDict, featID):
+    (featCon, featTotal) = addTargetDict[featID]
+    newRowList = [''] * len(targetFileHeaderList)
+    for aTargetHeaderCol in range(0, len(targetFileHeaderList)):
+        aTargetHeaderName = targetFileHeaderList[aTargetHeaderCol]
+        if aTargetHeaderName.lower() == 'id':
+            newRowList[aTargetHeaderCol] = str(featID)
+        elif aTargetHeaderName.lower() == 'name':
+            newRowList[aTargetHeaderCol] = 'blank'
+        elif aTargetHeaderName.lower() == 'conserved':
+            newRowList[aTargetHeaderCol] = str(featCon)
+        elif aTargetHeaderName.lower() == 'total':
+            newRowList[aTargetHeaderCol] = str(featTotal)
+        elif aTargetHeaderName.lower() == 'pc_target':
+            newRowList[aTargetHeaderCol] = '-1'
+        elif aTargetHeaderName.lower() in ['type', 'target', 'spf']:
+            newRowList[aTargetHeaderCol] = '0'
+
+    return newRowList
 
 
 def makeAddTargetDict(puLayer, addAbundDict, featIDList):

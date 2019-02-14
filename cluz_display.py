@@ -370,10 +370,11 @@ def displayGraduatedLayer(setupObject, fieldName, layerName, legendCode):
             maxValue = maxCountScore
         myColour = colourList[aValue]
         mySymbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': myColour, 'color_border': myColour})
-        theRange = QgsRendererRange(minValue, maxValue, mySymbol, str(minValue) + ' - ' + str(maxValue))
+        minValueDisplay = round(minValue, setupObject.decimalPlaces)
+        maxValueDisplay = round(minValue + incValue, setupObject.decimalPlaces)
+        theRange = QgsRendererRange(minValueDisplay, maxValueDisplay, mySymbol, str(minValueDisplay) + ' - ' + str(maxValueDisplay))
         minValue = maxValue
         rangeList.insert(0, theRange)
-
 
     myRenderer = QgsGraduatedSymbolRenderer('', rangeList)
     myRenderer.setMode(QgsGraduatedSymbolRenderer.EqualInterval)
@@ -382,6 +383,7 @@ def displayGraduatedLayer(setupObject, fieldName, layerName, legendCode):
     QgsProject.instance().addMapLayer(graduatedLayer)
 
     iface.mapCanvas().refresh()
+
 
 def displayIrrepResults(setupObject, fieldName):
     colourList = ['#FFFFBF', '#F4FAA7', '#EAF792', '#DAF57A', '#CAF266', '#B6F051', '#A0ED3B', '#86EB28', '#6DE815', '#4CE600']

@@ -35,6 +35,10 @@ from .cluz_dialog4 import distributionDialog, identifySelectedDialog, richnessDi
 from .cluz_dialog5 import inputsDialog, marxanDialog, loadDialog, calibrateDialog
 from .cluz_dialog6 import minpatchDialog
 from .cluz_dialog7 import targetDialog, abundSelectDialog, metDialog, changeStatusDialog, IdentifyTool
+from .cluz_dialog8 import aboutDialog
+
+# Initialize Qt resources from file resources.py
+import resources_rc
 
 from .cluz_functions3 import troubleShootCLUZFiles
 from .cluz_make_file_dicts import checkCreateSporderDat, makeAbundancePUKeyDict
@@ -42,6 +46,7 @@ from .cluz_dialog5 import checkCluzIsNotRunningOnMac, checkMarxanPath
 from .cluz_functions7 import changeBestToEarmarkedPUs, changeEarmarkedToAvailablePUs
 from .cluz_setup import checkAllRelevantFiles
 from .cluz_dialog3 import recalcUpdateTargetTableDetails
+
 
 
 class Cluz:
@@ -100,6 +105,8 @@ class Cluz:
         self.MinPatchAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_minpatch.png"), "Launch MinPatch", self.iface.mainWindow())
 #         # self.PatchesAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_portfolio.png"), "Show patches from Marxan or MinPatch output file", self.iface.mainWindow())
 
+        self.AboutAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_about.png"), "About CLUZ", self.iface.mainWindow())
+
         self.TargetAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_target.png"), "Open target table", self.iface.mainWindow())
         self.AbundAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_abund.png"), "Open abundance table", self.iface.mainWindow())
         self.EarmarkedToAvailableAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_ear_avail.png"), "Change the status of the Earmarked units to Available", self.iface.mainWindow())
@@ -132,7 +139,9 @@ class Cluz:
 
         self.MinPatchAction.triggered.connect(lambda: self.runMinPatch(setupObject))
 #         # self.PatchesAction.triggered.connect(lambda: self.runShowPatches(setupObject))
-#
+
+        self.AboutAction.triggered.connect(lambda: self.runShowAboutDialog(setupObject))
+
         self.TargetAction.triggered.connect(lambda: self.runTargetDialog(setupObject))
         self.AbundAction.triggered.connect(lambda: self.runAbundSelectDialog(setupObject))
         self.EarmarkedToAvailableAction.triggered.connect(lambda: self.changeEarmarkedToAvailable(setupObject))
@@ -166,7 +175,9 @@ class Cluz:
         self.cluz_menu.addSeparator()
         self.cluz_menu.addAction(self.MinPatchAction)
 #         # self.cluz_menu.addAction(self.PatchesAction)
-#
+        self.cluz_menu.addSeparator()
+        self.cluz_menu.addAction(self.AboutAction)
+
         # Add actions as buttons on menu bar
         self.cluz_toolbar.addAction(self.TargetAction)
         self.cluz_toolbar.addAction(self.AbundAction)
@@ -362,7 +373,13 @@ class Cluz:
 #             # Run the dialog event loop
 #             result = self.patchesDialog.exec_()
 #
-#
+
+    def runShowAboutDialog(self, setupObject):
+        self.aboutDialog = aboutDialog(self, setupObject)
+        self.aboutDialog.show()
+        self.aboutDialog.exec_()
+
+
     def runTargetDialog(self, setupObject):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
         if setupObject.setupStatus == 'files_checked':

@@ -209,7 +209,7 @@ def checkFilesAndReturnSetupFileOKBool(setupObject, decPlaceText, numIterText, n
 
 def checkStatusObjectValues(setupObject):
     setupFileCorrectBool = True
-    
+
     setupFileCorrectBool = checkDecPlacesValue(setupObject, setupFileCorrectBool)
     setupFileCorrectBool = checkNumItersValue(setupObject, setupFileCorrectBool)
     setupFileCorrectBool = checkNumRunsValue(setupObject, setupFileCorrectBool)
@@ -349,16 +349,17 @@ def checkFolderValues(setupObject):
     if os.path.isfile(setupObject.marxanPath) is False:
         warningMessage('Setup file incorrect format', 'The specified Marxan file cannot be found. Please correct this.')
         foldersOKBool = False
-    marxanDirPath = os.path.dirname(setupObject.marxanPath)
-    if setupObject.marxanPath == 'blank' or setupObject.marxanPath == '':
-        warningMessage('Marxan path invalid', 'The Marxan path is missing.')
-        foldersOKBool = False
-    elif os.path.isdir(marxanDirPath) is False:
-        warningMessage('Marxan path invalid', 'The specified folder containing Marxan does not exist.')
-        foldersOKBool = False
-    elif os.access(marxanDirPath, os.W_OK) is False:
-        warningMessage('Marxan path invalid', 'Running Marxan involves CLUZ creating a new input file in the folder where Marxan is stored. You do not have permission to save files into the specified folder so please move Marxan to a folder where you do have permission.')
-        foldersOKBool = False
+    else:
+        marxanDirPath = os.path.dirname(setupObject.marxanPath)
+        if setupObject.marxanPath == 'blank' or setupObject.marxanPath == '':
+            warningMessage('Marxan path invalid', 'The Marxan path is missing.')
+            foldersOKBool = False
+        elif os.path.isdir(marxanDirPath) is False:
+            warningMessage('Marxan path invalid', 'The specified folder containing Marxan does not exist.')
+            foldersOKBool = False
+        elif os.access(marxanDirPath, os.W_OK) is False:
+            warningMessage('Marxan path invalid', 'Running Marxan involves CLUZ creating a new input file in the folder where Marxan is stored. You do not have permission to save files into the specified folder so please move Marxan to a folder where you do have permission.')
+            foldersOKBool = False
 
     return foldersOKBool
 
