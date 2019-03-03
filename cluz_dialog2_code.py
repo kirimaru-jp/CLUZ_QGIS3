@@ -37,8 +37,8 @@ def check_MakeNewCLUZFiles(createDialog):
 
 
     if shapefileOKBool and conversionFormatOKBool and inputFolderOKBool and targetTableOKBool:
-        createTargetPuvspr2SporderFiles(createDialog)
         createPULayer(createDialog)
+        createTargetPuvspr2SporderFiles(createDialog)
         successMessage('Task completed', 'The CLUZ planning unit layer, blank abundance and target tables have been created. You can now use them when creating the CLUZ setup file.')
         createDialog.close()
 

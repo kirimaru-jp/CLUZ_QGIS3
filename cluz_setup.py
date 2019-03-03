@@ -445,7 +445,7 @@ def createAndCheckPuLayerFile(setupObject, checkBool):
     fields = puLayer.fields()
     fieldDetailsList = list()
     titleText = 'Formatting error: '
-    mainText = 'The planning unit shapefile must contain a field named '
+    mainText = 'the planning unit shapefile must contain a field named '
     for aField in fields:
         fieldDetailsList.append((str(aField.name()), str(aField.typeName())))
     if fieldDetailsList.count(('Unit_ID', 'Integer')) == 0 and fieldDetailsList.count(('Unit_ID', 'Integer64')) == 0:

@@ -268,11 +268,11 @@ def createTargetPuvspr2SporderFiles(createDialog):
 
     with open(inputPath + os.sep + 'puvspr2.dat','w', newline='') as puvspr2File:
         puvspr2Writer = csv.writer(puvspr2File)
-        puvspr2Writer.writerow(['Id', 'Name', 'Type', 'Target', 'Spf', 'Conserved', 'Total', 'PC_target'])
+        puvspr2Writer.writerow(['species', 'pu', 'amount'])
 
     with open(inputPath + os.sep + 'sporder.dat','w', newline='') as sporderFile:
         sporderWriter = csv.writer(sporderFile)
-        sporderWriter.writerow(['Id', 'Name', 'Type', 'Target', 'Spf', 'Conserved', 'Total', 'PC_target'])
+        sporderWriter.writerow(['species', 'pu', 'amount'])
 
 
 def createPULayer(createDialog):
