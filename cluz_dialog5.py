@@ -35,6 +35,7 @@ from .cluz_display import displayGraduatedLayer, removePreviousMarxanLayers, rel
 from .cluz_functions5 import createPuDatFile, marxanUpdateSetupObject, addBestMarxanOutputToPUShapefile, createBoundDatFile, createSpecDatFile, addSummedMarxanOutputToPUShapefile
 from .cluz_messages import criticalMessage, successMessage
 
+
 class inputsDialog(QDialog, Ui_inputsDialog):
     def __init__(self, iface, setupObject):
         QDialog.__init__(self)
@@ -109,7 +110,7 @@ class marxanDialog(QDialog, Ui_marxanDialog):
             marxanParameterDict = makeMarxanParameterDict(setupObject, marxanRawParameterDict)
             createSpecDatFile(setupObject)
 
-            setupObject = marxanUpdateSetupObject(setupObject, marxanParameterDict)
+            setupObject = marxanUpdateSetupObject(self, setupObject, marxanParameterDict)
             updateClzSetupFile(setupObject, True) #saveSuccessfulBool = True
             self.close()
 
@@ -126,8 +127,8 @@ class marxanDialog(QDialog, Ui_marxanDialog):
 
             reloadPULayer(setupObject)
             removePreviousMarxanLayers()
-            displayBestOutput(setupObject, 'Best', bestLayerName)
             displayGraduatedLayer(setupObject, 'SF_Score', summedLayerName, 1) #1 is SF legend code
+            displayBestOutput(setupObject, 'Best', bestLayerName) #Added second to be on top
 
             targetsMetAction.setEnabled(True)
 
@@ -158,13 +159,13 @@ class loadDialog(QDialog, Ui_loadDialog):
 
     def setBestPath(self):
         (bestPathNameText, fileTypeDetailsText) = QFileDialog.getOpenFileName(self, 'Select Marxan best portfolio output', '*.txt')
-        if bestPathNameText is None:
+        if bestPathNameText is not None:
             self.bestLineEdit.setText(bestPathNameText)
 
 
     def setSummedPath(self):
         (summedPathNameText, fileTypeDetailsText) = QFileDialog.getOpenFileName(self, 'Select Marxan summed solution output', '*.txt')
-        if summedPathNameText is None:
+        if summedPathNameText is not None:
             self.summedLineEdit.setText(summedPathNameText)
 
 

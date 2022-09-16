@@ -29,24 +29,25 @@ import os
 from .cluz_setup import CluzSetupObject
 
 from .cluz_dialog1 import startDialog, setupDialog
-from .cluz_dialog2 import createDialog, convertVecDialog, convertCsvDialog
-from .cluz_dialog3 import removeDialog
+from .cluz_dialog2 import createDialog, convertVecDialog, convertRasterDialog, convertCsvDialog
+from .cluz_dialog3 import removeDialog, recalcUpdateTargetTableDetails
 from .cluz_dialog4 import distributionDialog, identifySelectedDialog, richnessDialog, irrepDialog, portfolioDialog
-from .cluz_dialog5 import inputsDialog, marxanDialog, loadDialog, calibrateDialog
+from .cluz_dialog5 import inputsDialog, marxanDialog, loadDialog, calibrateDialog, checkCluzIsNotRunningOnMac, checkMarxanPath
 from .cluz_dialog6 import minpatchDialog
 from .cluz_dialog7 import targetDialog, abundSelectDialog, metDialog, changeStatusDialog, IdentifyTool
 from .cluz_dialog8 import aboutDialog
+
+from .zcluz_dialog3 import recalcUpdateZonesTargetTableDetails
+from .zcluz_dialog5 import zonesInputsDialog, zonesMarxanDialog
+from .zcluz_dialog7 import zonesDialog, zonesChangeStatusDialog
 
 # Initialize Qt resources from file resources.py
 import resources_rc
 
 from .cluz_functions3 import troubleShootCLUZFiles
 from .cluz_make_file_dicts import checkCreateSporderDat, makeAbundancePUKeyDict
-from .cluz_dialog5 import checkCluzIsNotRunningOnMac, checkMarxanPath
 from .cluz_functions7 import changeBestToEarmarkedPUs, changeEarmarkedToAvailablePUs
 from .cluz_setup import checkAllRelevantFiles
-from .cluz_dialog3 import recalcUpdateTargetTableDetails
-
 
 
 class Cluz:
@@ -61,23 +62,8 @@ class Cluz:
             'i18n',
             'cluz_{}.qm'.format(locale))
 
-        if os.path.exists(locale_path):
-            self.translator = QTranslator()
-            self.translator.load(locale_path)
-
-            if qVersion() > '4.3.3':
-                QCoreApplication.installTranslator(self.translator)
-
-
-    def initGui(self):
         self.cluz_menu = QMenu(self.iface.mainWindow())
         self.cluz_menu.setTitle("CLUZ")
-        cluzMenuBar = self.iface.mainWindow().menuBar()
-        cluzMenuBar.insertMenu(self.iface.firstRightStandardMenu().menuAction(), self.cluz_menu)
-#
-        # Create the Setup Object
-        setupObject = CluzSetupObject()
-
         self.cluz_toolbar = self.iface.addToolBar("CLUZ")
 
         # Create action that will start plugin configuration
@@ -85,6 +71,7 @@ class Cluz:
 
         self.CreateAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_create.png"), "Create initial CLUZ files", self.iface.mainWindow())
         self.ConvertVecAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_convpoly.png"), "Convert polyline or polygon themes to Marxan abundance data", self.iface.mainWindow())
+        self.ConvertRasterAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_convraster.png"), "Convert raster layer to Marxan abundance data", self.iface.mainWindow())
         self.ConvertCsvAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_convcsv.png"), "Import fields from table to Marxan abundance file", self.iface.mainWindow())
 
         self.RemoveAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_rem.png"), "Remove features from CLUZ tables", self.iface.mainWindow())
@@ -103,12 +90,14 @@ class Cluz:
         self.CalibrateAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_calibrate.png"), "Calibrate Marxan parameters", self.iface.mainWindow())
 
         self.MinPatchAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_minpatch.png"), "Launch MinPatch", self.iface.mainWindow())
-#         # self.PatchesAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_portfolio.png"), "Show patches from Marxan or MinPatch output file", self.iface.mainWindow())
+        # self.PatchesAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_portfolio.png"), "Show patches from Marxan or MinPatch output file", self.iface.mainWindow())
 
         self.AboutAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_menu_about.png"), "About CLUZ", self.iface.mainWindow())
 
-        self.TargetAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_target.png"), "Open target table", self.iface.mainWindow())
-        self.AbundAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_abund.png"), "Open abundance table", self.iface.mainWindow())
+        self.TargetAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_target.png"), "Open Target Table", self.iface.mainWindow())
+        self.AbundAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_abund.png"), "Open Abundance Table", self.iface.mainWindow())
+        self.ZonesAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_zones.png"), "Open Zones Table", self.iface.mainWindow())
+
         self.EarmarkedToAvailableAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_ear_avail.png"), "Change the status of the Earmarked units to Available", self.iface.mainWindow())
         self.BestToEarmarkedAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_best_ear.png"), "Change the status of the Best units to Earmarked", self.iface.mainWindow())
         self.TargetsMetAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_target_met.png"), "Open Marxan results table", self.iface.mainWindow())
@@ -116,10 +105,26 @@ class Cluz:
         self.ChangeAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_change.png"), "Change planning unit status", self.iface.mainWindow())
         self.IdentifyAction = QAction(QIcon(os.path.dirname(__file__) + "/icons/cluz_identify.png"), "Identify features in planning unit", self.iface.mainWindow())
 
+        if os.path.exists(locale_path):
+            self.translator = QTranslator()
+            self.translator.load(locale_path)
+
+            if qVersion() > '4.3.3':
+                QCoreApplication.installTranslator(self.translator)
+
+
+    def initGui(self):
+        cluzMenuBar = self.iface.mainWindow().menuBar()
+        cluzMenuBar.insertMenu(self.iface.firstRightStandardMenu().menuAction(), self.cluz_menu)
+
+        # Create the Setup Object
+        setupObject = CluzSetupObject()
+
         # connect the action to the run method
         self.SetupAction.triggered.connect(lambda: self.runSetupDialog(setupObject))
         self.CreateAction.triggered.connect(self.runCreateDialog)
         self.ConvertVecAction.triggered.connect(lambda: self.convertPolylinePolygonToAbundanceData(setupObject))
+        self.ConvertRasterAction.triggered.connect(lambda: self.convertRasterToAbundanceData(setupObject))
         self.ConvertCsvAction.triggered.connect(lambda: self.convertCsvToAbundanceData(setupObject))
 
         self.RemoveAction.triggered.connect(lambda: self.runRemoveFeatures(setupObject))
@@ -144,8 +149,9 @@ class Cluz:
 
         self.TargetAction.triggered.connect(lambda: self.runTargetDialog(setupObject))
         self.AbundAction.triggered.connect(lambda: self.runAbundSelectDialog(setupObject))
-        self.EarmarkedToAvailableAction.triggered.connect(lambda: self.changeEarmarkedToAvailable(setupObject))
+        self.ZonesAction.triggered.connect(lambda: self.runZonesDialog(setupObject))
 
+        self.EarmarkedToAvailableAction.triggered.connect(lambda: self.changeEarmarkedToAvailable(setupObject))
         self.BestToEarmarkedAction.triggered.connect(lambda: self.changeBestToEarmarked(setupObject))
         self.TargetsMetAction.triggered.connect(lambda: self.targetsMetDialog(setupObject))
         self.ChangeAction.triggered.connect(lambda: self.runChangeStatusDialog(setupObject))
@@ -156,6 +162,7 @@ class Cluz:
         self.cluz_menu.addSeparator()
         self.cluz_menu.addAction(self.CreateAction)
         self.cluz_menu.addAction(self.ConvertVecAction)
+        self.cluz_menu.addAction(self.ConvertRasterAction)
         self.cluz_menu.addAction(self.ConvertCsvAction)
         self.cluz_menu.addSeparator()
         self.cluz_menu.addAction(self.RemoveAction)
@@ -181,6 +188,8 @@ class Cluz:
         # Add actions as buttons on menu bar
         self.cluz_toolbar.addAction(self.TargetAction)
         self.cluz_toolbar.addAction(self.AbundAction)
+        # self.cluz_toolbar.addAction(self.ZonesAction)
+        self.cluz_toolbar.addSeparator()
         self.cluz_toolbar.addAction(self.EarmarkedToAvailableAction)
         self.cluz_toolbar.addAction(self.TargetsMetAction)
         self.cluz_toolbar.addAction(self.BestToEarmarkedAction)
@@ -223,6 +232,16 @@ class Cluz:
             self.convertVecDialog.exec_()
 
 
+    def convertRasterToAbundanceData(self, setupObject):
+        checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
+        if setupObject.setupStatus == 'files_checked':
+            if setupObject.abundPUKeyDict == 'blank':
+                setupObject.abundPUKeyDict = makeAbundancePUKeyDict(setupObject)
+            self.convertRasterDialog = convertRasterDialog(self, setupObject)
+            self.convertRasterDialog.show()
+            self.convertRasterDialog.exec_()
+
+
     def convertCsvToAbundanceData(self, setupObject):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
         if setupObject.setupStatus == 'files_checked':
@@ -246,7 +265,10 @@ class Cluz:
     def recalcTargetTable(self, setupObject):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
         if setupObject.setupStatus == 'files_checked':
-            recalcUpdateTargetTableDetails(setupObject)
+            if setupObject.analysisType != 'MarxanWithZones':
+                recalcUpdateTargetTableDetails(setupObject)
+            else:
+                recalcUpdateZonesTargetTableDetails(setupObject)
 
 
     def runTroubleShoot(self, setupObject):
@@ -307,27 +329,44 @@ class Cluz:
 
     def runCreateMarxanInputFiles(self, setupObject):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
-        if setupObject.setupStatus == "files_checked":
-            self.inputsDialog = inputsDialog(self, setupObject)
-            self.inputsDialog.show()
-            self.inputsDialog.exec_()
+        if setupObject.setupStatus == 'files_checked':
+            if setupObject.analysisType != 'MarxanWithZones':
+                self.inputsDialog = inputsDialog(self, setupObject)
+                self.inputsDialog.show()
+                self.inputsDialog.exec_()
+            else:
+                self.zonesInputsDialog = zonesInputsDialog(self, setupObject)
+                self.zonesInputsDialog.show()
+                self.zonesInputsDialog.exec_()
 
 
     def runMarxan(self, setupObject, targetsMetAction):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
-        if setupObject.setupStatus == "files_checked":
+        if setupObject.setupStatus == 'files_checked':
             checkCreateSporderDat(setupObject)
             marxanBool = checkCluzIsNotRunningOnMac()
-            if marxanBool:
-                marxanBool = checkMarxanPath(setupObject, marxanBool)
+            if setupObject.analysisType != 'MarxanWithZones':
                 if marxanBool:
-                    self.marxanDialog = marxanDialog(self, setupObject, targetsMetAction)
-                    self.marxanDialog.show()
-                    self.marxanDialog.exec_()
-                else:
-                    self.setupDialog = setupDialog(self, setupObject)
-                    self.setupDialog.show()
-                    self.setupDialog.exec_()
+                    marxanBool = checkMarxanPath(setupObject, marxanBool)
+                    if marxanBool:
+                        self.marxanDialog = marxanDialog(self, setupObject, targetsMetAction)
+                        self.marxanDialog.show()
+                        self.marxanDialog.exec_()
+                    else:
+                        self.setupDialog = setupDialog(self, setupObject)
+                        self.setupDialog.show()
+                        self.setupDialog.exec_()
+            else:
+                if marxanBool:
+                    marxanBool = checkMarxanPath(setupObject, marxanBool)
+                    if marxanBool:
+                        self.zonesMarxanDialog = zonesMarxanDialog(self, setupObject, targetsMetAction)
+                        self.zonesMarxanDialog.show()
+                        self.zonesMarxanDialog.exec_()
+                    else:
+                        self.setupDialog = setupDialog(self, setupObject)
+                        self.setupDialog.show()
+                        self.setupDialog.exec_()
 
 
     def loadPrevMarxanResults(self, setupObject):
@@ -355,7 +394,7 @@ class Cluz:
 
     def runMinPatch(self, setupObject):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
-        if setupObject.setupStatus == "files_checked":
+        if setupObject.setupStatus == 'files_checked':
             self.minpatchDialog = minpatchDialog(self, setupObject)
             self.minpatchDialog.show()
             self.minpatchDialog.exec_()
@@ -398,6 +437,14 @@ class Cluz:
             self.abundSelectDialog.exec_()
 
 
+    def runZonesDialog(self, setupObject):
+        checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
+        if setupObject.setupStatus == 'files_checked':
+            self.zonesDialog = zonesDialog(self, setupObject)
+            self.zonesDialog.show()
+            self.zonesDialog.exec_()
+
+
     def changeEarmarkedToAvailable(self, setupObject):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)
         if setupObject.setupStatus == 'files_checked':
@@ -426,10 +473,14 @@ class Cluz:
         if setupObject.setupStatus == 'files_checked':
             if setupObject.abundPUKeyDict == 'blank':
                 setupObject.abundPUKeyDict = makeAbundancePUKeyDict(setupObject)
-            self.changeStatusDialog = changeStatusDialog(self, setupObject)
-            self.changeStatusDialog.show()
-            self.changeStatusDialog.exec_()
-
+            if setupObject.analysisType != 'MarxanWithZones':
+                self.changeStatusDialog = changeStatusDialog(self, setupObject)
+                self.changeStatusDialog.show()
+                self.changeStatusDialog.exec_()
+            else:
+                self.zonesChangeStatusDialog = zonesChangeStatusDialog(self, setupObject)
+                self.zonesChangeStatusDialog.show()
+                self.zonesChangeStatusDialog.exec_()
 
     def showFeaturesInPU(self, setupObject):
         checkAllRelevantFiles(self, setupObject, startDialog, setupDialog)

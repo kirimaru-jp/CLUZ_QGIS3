@@ -40,6 +40,9 @@ class minpatchDialog(QDialog, Ui_minpatchDialog):
         outputText = 'Marxan output folder: ' + setupObject.outputPath
         self.outputLabel.setText(outputText)
 
+        self.detailsLineEdit.setText('C://Users//rjsmi//Dropbox//new_NE_CLUZ_analysis//input//minpatch.dat')
+        self.blmLineEdit.setText('0')
+
         marxanFileList = makeMarxanFileList(setupObject)
         if len(marxanFileList) > 0:
             self.fileListWidget.addItems(marxanFileList)

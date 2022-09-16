@@ -27,14 +27,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/forms")
 from cluz_form_start import Ui_startDialog
 from cluz_form_setup import Ui_setupDialog
 
-from .cluz_messages import warningMessage, successMessage
+from .cluz_messages import warningMessage, successMessage, infoMessage
 from .cluz_dialog1_code import loadSetupFileCode, saveAsSetupFileCode, saveSetupFileCode, addSetupDialogTextFromSetupObject
 from .cluz_display import removeThenAddPULayer
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/forms")
-from cluz_form_start import Ui_startDialog
-from cluz_form_setup import Ui_setupDialog
-
 
 
 class startDialog(QDialog, Ui_startDialog):
@@ -65,16 +60,37 @@ class setupDialog(QDialog, Ui_setupDialog):
 
         addSetupDialogTextFromSetupObject(self, setupObject)
 
+        if setupObject.analysisType == 'Marxan':
+            self.marxanRadioButton.setChecked(True)
+            self.mzonesRadioButton.setChecked(False)
+            # self.mzonesRadioButton.setDisabled(True) ###########
+            self.zonesLabel.setVisible(False)
+            self.zonesLineEdit.setVisible(False)
+            self.zonesButton.setVisible(False)
+        else:
+            self.marxanRadioButton.setChecked(False)
+            self.mzonesRadioButton.setChecked(True)
+            self.zonesLabel.setVisible(True)
+            self.zonesLineEdit.setVisible(True)
+            self.zonesButton.setVisible(True)
+
+        self.mzonesRadioButton.clicked.connect(self.displayMZoneMessage)  ###########
+
         self.marxanButton.clicked.connect(self.setMarxanPath)
         self.inputButton.clicked.connect(self.setInputPath)
         self.outputButton.clicked.connect(self.setOutputPath)
         self.puButton.clicked.connect(self.setPuPath)
         self.targetButton.clicked.connect(self.setTargetPath)
+        self.zonesButton.clicked.connect(self.setZonesPath)
 
         self.loadButton.clicked.connect(lambda: self.loadSetupFile(setupObject))
         self.saveButton.clicked.connect(lambda: self.saveSetupFile(setupObject))
         self.saveAsButton.clicked.connect(lambda: self.saveAsSetupFile(setupObject))
 
+    def displayMZoneMessage(self):
+        infoMessage('Marxan with Zones support is still in development', 'Please email Bob Smith (r.j.smith@kent.ac.uk) if you would like to help with testing.')
+        self.marxanRadioButton.setChecked(True)
+        self.mzonesRadioButton.setChecked(False)
 
     def setMarxanPath(self):
         (marxanPathNameRawText, fileTypeDetailsText) = QFileDialog.getOpenFileName(self, 'Select Marxan file', '*.exe')
@@ -105,10 +121,17 @@ class setupDialog(QDialog, Ui_setupDialog):
 
 
     def setTargetPath(self):
-        (targetPathNameRawText, fileTypeDetailsText)= QFileDialog.getOpenFileName(self, 'Select target table', '*.csv')
+        (targetPathNameRawText, fileTypeDetailsText) = QFileDialog.getOpenFileName(self, 'Select target table', '*.csv')
         targetPathNameText = os.path.abspath(targetPathNameRawText)
         if targetPathNameText is not None:
             self.targetLineEdit.setText(targetPathNameText)
+
+
+    def setZonesPath(self):
+        (zonePathNameRawText, fileTypeDetailsText) = QFileDialog.getOpenFileName(self, 'Select zone table', '*.csv')
+        zonePathNameText = os.path.abspath(zonePathNameRawText)
+        if zonePathNameText is not None:
+            self.zoneLineEdit.setText(zonePathNameText)
 
 
     def setPrecValue(self, precValue):

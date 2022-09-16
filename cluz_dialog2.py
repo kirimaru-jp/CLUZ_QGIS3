@@ -26,11 +26,13 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/forms")
 from cluz_form_create import Ui_createDialog
 from cluz_form_convert_vec import Ui_convertVecDialog
+from cluz_form_convert_raster import Ui_convertRasterDialog
 from cluz_form_convert_csv import Ui_convertCsvDialog
 
 from .cluz_functions2 import makeCsvAddAbundDict
 from .cluz_dialog2_code import check_MakeNewCLUZFiles, checkAddLayerListConvertVecDialog, checkLayerFactor, check_AddCsvFilePath, checkConvFactor, create_UpdateAbundDataFromVecFile
-from .cluz_dialog2_code import checkConvFactorConvertVec, addCSVDictToAbundDict_UpdatePuvspr2TargetFiles, checkLayerFactorConvertVec, makeErrorLayerString
+from .cluz_dialog2_code import checkConvFactorConvertVec, addCSVDictToAbundDict_UpdatePuvspr2TargetFiles, checkLayerFactorConvertVec, makeVectorErrorLayerString, checkLayerHasSameCrsAsPULayer
+from .cluz_dialog2_code import checkAddLayerListConvertRasterDialog, checkLayerFactorConvertRaster, checkConvFactorConvertRaster, create_UpdateAbundDataFromRasterFile, makeRasterErrorLayerString
 from .cluz_messages import criticalMessage
 
 
@@ -82,17 +84,44 @@ class convertVecDialog(QDialog, Ui_convertVecDialog):
         self.convLineEdit.setEnabled(False)
         self.convLabel.setEnabled(False)
 
-        self.okButton.clicked.connect(lambda: self.convertLayersToAbundTable(setupObject))
+        self.okButton.clicked.connect(lambda: self.convertVecLayersToAbundTable(setupObject))
 
 
-    def convertLayersToAbundTable(self, setupObject):
+    def convertVecLayersToAbundTable(self, setupObject):
         layerList, layerFactorCheck = checkLayerFactorConvertVec(self)
+        sameProjectionCheck = checkLayerHasSameCrsAsPULayer(self, setupObject)
         convFactorCheck = checkConvFactorConvertVec(self)
 
-        if layerFactorCheck and convFactorCheck:
+        if layerFactorCheck and sameProjectionCheck and convFactorCheck:
             errorLayerList = create_UpdateAbundDataFromVecFile(self, setupObject, layerList)
             if len(errorLayerList) > 0:
-                errorLayerString = makeErrorLayerString(errorLayerList)
+                vectorErrorLayerString = makeVectorErrorLayerString(errorLayerList)
+                criticalMessage('Error processing layers', vectorErrorLayerString)
+
+
+class convertRasterDialog(QDialog, Ui_convertRasterDialog):
+    def __init__(self, iface, setupObject):
+        QDialog.__init__(self)
+        self.iface = iface
+        self.setupUi(self)
+
+        checkAddLayerListConvertRasterDialog(self)
+        self.convLineEdit.setText("1")
+        self.convLineEdit.setEnabled(False)
+        self.convLabel.setEnabled(False)
+
+        self.okButton.clicked.connect(lambda: self.convertRasterLayersToAbundTable(setupObject))
+
+
+    def convertRasterLayersToAbundTable(self, setupObject):
+        layerList, layerFactorCheck = checkLayerFactorConvertRaster(self)
+        sameProjectionCheck = checkLayerHasSameCrsAsPULayer(self, setupObject)
+        convFactorCheck = checkConvFactorConvertRaster(self)
+
+        if layerFactorCheck and sameProjectionCheck and convFactorCheck:
+            errorLayerList = create_UpdateAbundDataFromRasterFile(self, setupObject, layerList)
+            if len(errorLayerList) > 0:
+                errorLayerString = makeRasterErrorLayerString(errorLayerList)
                 criticalMessage('Error processing layers', errorLayerString)
 
 

@@ -27,6 +27,7 @@ from .cluz_messages import clearProgressBar, infoMessage, makeProgressBar, warni
 from .cluz_make_file_dicts import checkCreateSporderDat, makeTargetDict, returnTempPathName
 from .cluz_setup import checkStatusObjectValues, createAndCheckCLUZFiles
 
+from .zcluz_functions3 import zonesCheckPuShapeFilePUStatusValue, checkZonesFieldStatusListForConflicts, checkZonesFieldsTargetCsvFile
 
 ############################ Remove features ############################
 
@@ -79,7 +80,10 @@ def troubleShootCLUZFiles(setupObject):
     setupObject = checkStatusObjectValues(setupObject)
     setupObject = createAndCheckCLUZFiles(setupObject)
     checkCreateSporderDat(setupObject)
+
     targetErrorSet, targetFeatIDSet = checkTargetCsvFile(setupObject)
+    if setupObject.analysisType == 'MarxanWithZones':
+        targetErrorSet = checkZonesFieldsTargetCsvFile(setupObject, targetErrorSet)
     puvspr2AbundErrorSet, puvspr2AbundErrorRowSet, puvspr2PuIDSet, puvspr2FeatIDSet, puvspr2RowNum, puvspr2RecCountDict = checkAbundTableDatFile(setupObject, 'Puvspr2')
     sporderAbundErrorSet, sporderAbundErrorRowSet, sporderPuIDSet, sporderFeatIDSet, sporderRowNum, sporderRecCountDict = checkAbundTableDatFile(setupObject, 'Sporder')
     shapeErrorSet, puPuIDSet, duplicateIDText = checkPuShapeFile(setupObject)
@@ -129,7 +133,10 @@ def checkTargetCsvFile(setupObject):
             featTypeString = aRow[headerList.index('type')]
             featSpfString = aRow[headerList.index('spf')]
             featTargetString = aRow[headerList.index('target')]
-            featConservedString = aRow[headerList.index('conserved')]
+            if setupObject.analysisType != 'MarxanWithZones':
+                featConservedString = aRow[headerList.index('ear+cons')]
+            else:
+                featConservedString = aRow[headerList.index('ear+lock')]
             featTotalString = aRow[headerList.index('total')]
             featPc_TargetString = aRow[headerList.index('pc_target')]
 
@@ -515,7 +522,7 @@ def checkPuShapeFile(setupObject):
     unitIDField = puLayer.fields().indexFromName('Unit_ID')
     puAreaField = puLayer.fields().indexFromName('Area')
     puCostField = puLayer.fields().indexFromName('Cost')
-    unitStatusField = puLayer.fields().indexFromName('Status')
+    puStatusField = puLayer.fields().indexFromName('Status')
 
     progressBar = makeProgressBar('Processing planning unit shapefile')
     polyCount = 1
@@ -530,8 +537,20 @@ def checkPuShapeFile(setupObject):
         puIDList.append(puID)
         shapeErrorSet = checkPuShapeFilePUIDValue(shapeErrorSet, puID)
         shapeErrorSet = checkPuShapeFilePUAreaValue(shapeErrorSet, puAttributes, puAreaField)
-        shapeErrorSet = checkPuShapeFilePUCostValue(shapeErrorSet, puAttributes, puCostField)
-        shapeErrorSet = checkPuShapeFilePUStatusValue(shapeErrorSet, puAttributes, unitStatusField)
+        if setupObject.analysisType != 'MarxanWithZones':
+            shapeErrorSet = checkPuShapeFilePUCostValue(shapeErrorSet, puAttributes, puCostField)
+            shapeErrorSet = checkPuShapeFilePUStatusValue(shapeErrorSet, puAttributes, puStatusField)
+        else:
+            zonesFieldStatusList = list()
+            for zoneID in setupObject.zonesDict:
+                costFieldName = 'Z' + str(zoneID + 1) + '_Cost'
+                statusFieldName = 'Z' + str(zoneID) + '_Status'
+                puCostField = puLayer.fields().indexFromName(costFieldName)
+                puStatusField = puLayer.fields().indexFromName(statusFieldName)
+                shapeErrorSet = checkPuShapeFilePUCostValue(shapeErrorSet, puAttributes, puCostField)
+                shapeErrorSet = zonesCheckPuShapeFilePUStatusValue(shapeErrorSet, puAttributes, puStatusField)
+                zonesFieldStatusList.append(puAttributes[puStatusField])
+            shapeErrorSet = checkZonesFieldStatusListForConflicts(shapeErrorSet, zonesFieldStatusList)
     clearProgressBar()
 
     shapeErrorSet, puIDSet, duplicateIDText = checkPuShapeFileDuplicatePUIDValue(shapeErrorSet, puIDList)
@@ -584,8 +603,8 @@ def checkPuShapeFilePUCostValue(shapeErrorSet, puAttributes, puCostField):
 
 
 def checkPuShapeFilePUStatusValue(shapeErrorSet, puAttributes, unitStatusField):
-    unitStatus = puAttributes[unitStatusField]
-    if not unitStatus in ['Available', 'Conserved', 'Earmarked', 'Excluded']:
+    puStatus = puAttributes[unitStatusField]
+    if not puStatus in ['Available', 'Conserved', 'Earmarked', 'Excluded']:
         shapeErrorSet.add('puStatusWrong')
 
     return shapeErrorSet
@@ -626,6 +645,8 @@ def pushPuShapeFileErrorMessages(shapeErrorSet, duplicateIDText):
             warningMessage('Planning unit layer: ', 'at least one of the planning unit cost values is not a non-negative number.')
         if anError == 'puStatusWrong':
             warningMessage('Planning unit layer: ', 'at least one of the planning unit status values is incorrect. They should either be Available, Conserved, Earmarked or Excluded.')
+        if anError == 'puZonesStatusWrong':
+            warningMessage('Planning unit layer: ', 'at least one of the planning unit status values is incorrect. They should either be Available, Earmarked, Excluded or Locked.')
 
 
 def checkIDsMatchInTargetTableAndPuvspr2(targetFeatIDSet, puvspr2FeatIDSet, idValuesNotDuplicated):

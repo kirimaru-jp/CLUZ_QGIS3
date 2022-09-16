@@ -34,10 +34,15 @@ from cluz_form_met import Ui_metDialog
 from cluz_form_change import Ui_ChangeStatusDialog
 from cluz_form_identify import Ui_identifyDialog
 
-from .cluz_dialog7_code import targetDialogKeyPressEvent, loadMarxanResultsMetDialog, metDialogKeyPressEvent, loadAbundSelectFeatureList, setIdentifyDialogWindowTitle, addTargetTableData, addIdentifyDataToTableWidget, undoStatusofPULayer_UpdateTargetTable, identifyDialogKeyPressEvent, returnPointPUIDList, changeStatusofPULayer_UpdateTargetTable, loadAbundDictData, abundDialogKeyPressEvent, makeIdentifyData
+from .cluz_dialog7_code import targetDialogKeyPressEvent, loadMarxanResultsMetDialog, metDialogKeyPressEvent, loadAbundSelectFeatureList, setIdentifyDialogWindowTitle, addTargetTableData
+from .cluz_dialog7_code import addIdentifyDataToTableWidget, undoStatusofPULayer_UpdateTargetTable, identifyDialogKeyPressEvent, returnPointPUIDList, changeStatusofPULayer_UpdateTargetTable
+from .cluz_dialog7_code import loadAbundDictData, abundDialogKeyPressEvent, makeIdentifyData
+from .cluz_display import updatePULayerToShowChangesByShiftingExtent, makePULayerActive
 from .cluz_functions7 import returnTargetsMetTuple
 from .cluz_make_file_dicts import makeTargetDict, makeTargetDialogRowList
-from .cluz_display import updatePULayerToShowChangesByShiftingExtent
+
+from .zcluz_make_file_dicts import makeZonesTargetDict, makeZonesTargetDialogRowList
+from .zcluz_dialog7_code import addZonesTargetTableData
 
 
 ######################## Target table ##########################
@@ -48,17 +53,29 @@ class targetDialog(QDialog, Ui_targetDialog):
         self.iface = iface
         self.setupUi(self)
         self.clip = QApplication.clipboard()
-        targetDict = makeTargetDict(setupObject)
-        targetDialogRowList, numericColsList = makeTargetDialogRowList(setupObject)
-        if targetDict != 'blank':
-            setupObject.targetDict = targetDict
-            setupObject.targetDialogRowList = targetDialogRowList
-            setupObject.numericColsList = numericColsList
-            self.loadTargetDictData(setupObject)
+        if setupObject.analysisType == 'MarxanWithZones':
+            targetDict = makeZonesTargetDict(setupObject)
+            targetDialogRowList, numericColsList = makeTargetDialogRowList(setupObject)
+            if targetDict != 'blank':
+                setupObject.targetDict = targetDict
+                setupObject.targetDialogRowList = targetDialogRowList
+                setupObject.numericColsList = numericColsList
+                self.loadTargetDictData(setupObject)
+        else:
+            targetDict = makeTargetDict(setupObject)
+            targetDialogRowList, numericColsList = makeTargetDialogRowList(setupObject)
+            if targetDict != 'blank':
+                setupObject.targetDict = targetDict
+                setupObject.targetDialogRowList = targetDialogRowList
+                setupObject.numericColsList = numericColsList
+                self.loadTargetDictData(setupObject)
+
 
     def loadTargetDictData(self, setupObject):
-        addTargetTableData(self, setupObject)
-
+        if setupObject.analysisType == 'MarxanWithZones':
+            addZonesTargetTableData(self, setupObject)
+        else:
+            addTargetTableData(self, setupObject)
 
     def keyPressEvent(self, e):
         targetDialogKeyPressEvent(self, e)
@@ -162,6 +179,7 @@ class changeStatusDialog(QDialog, Ui_ChangeStatusDialog):
         self.iface = iface
         self.setupUi(self)
 
+        makePULayerActive(setupObject)
         targetsMetCount, targetCount = returnTargetsMetTuple(setupObject)
         self.targetsMetLabel.setText("Targets met: " + str(targetsMetCount) + " of " + str(targetCount))
         self.undoButton.setEnabled(False)

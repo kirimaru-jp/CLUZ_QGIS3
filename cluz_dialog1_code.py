@@ -31,10 +31,18 @@ def addSetupDialogTextFromSetupObject(setupDialog, setupObject):
     setupDialog.puLineEdit.setText(setupObject.puPath)
     setupDialog.targetLineEdit.setText(setupObject.targetPath)
     setupDialog.setPrecValue(setupObject.decimalPlaces)
+
     if os.path.isfile(setupObject.setupPath):
         setupPathText = os.path.abspath(setupObject.setupPath)
     else:
         setupPathText = 'blank'
+
+    if setupObject.analysisType == 'MarxanWithZones':
+        setupDialog.mzonesRadioButton.setChecked(True)
+        setupDialog.zonesLineEdit.setText(setupObject.zonesPath)
+    else:
+        setupDialog.mzonesRadioButton.setChecked(False)
+
     setupPathLabelText = 'Setup file location: ' + setupPathText
     setupDialog.setupPathLabel.setText(setupPathLabelText)
 
@@ -58,6 +66,12 @@ def loadSetupFileCode(setupDialog, setupObject, setupFilePath):
         setupDialog.targetLineEdit.setText(setupObject.targetPath)
         setupDialog.setPrecValue(setupObject.decimalPlaces)
 
+        if setupObject.analysisType == 'MarxanWithZones':
+            setupDialog.mzonesRadioButton.setChecked(True)
+            setupDialog.zonesLineEdit.setText(setupObject.zonesPath)
+        else:
+            setupDialog.mzonesRadioButton.setChecked(False)
+
         checkAddPULayer(setupObject)
 
 
@@ -65,17 +79,25 @@ def saveSetupFileCode(setupDialog, setupObject, setupFilePath):
     limboSetupObject = copy.deepcopy(setupObject)
     limboSetupObject.setupStatus = 'blank'
 
+    if setupDialog.mzonesRadioButton.isChecked():
+        limboSetupObject.analysisType = 'MarxanWithZones'
+    else:
+        limboSetupObject.analysisType = 'Marxan'
     limboSetupObject.decimalPlaces = int(setupDialog.precComboBox.currentText())
     limboSetupObject.marxanPath = setupDialog.marxanLineEdit.text()
     limboSetupObject.inputPath = setupDialog.inputLineEdit.text()
     limboSetupObject.outputPath = setupDialog.outputLineEdit.text()
     limboSetupObject.puPath = setupDialog.puLineEdit.text()
     limboSetupObject.targetPath = setupDialog.targetLineEdit.text()
+    if limboSetupObject.analysisType == 'MarxanWithZones':
+        limboSetupObject.zonesPath = setupDialog.zonesLineEdit.text()
+
     limboSetupObject = checkStatusObjectValues(limboSetupObject)
     saveSuccessfulBool = False
 
     if limboSetupObject.setupStatus == 'values_checked':
         limboSetupObject = createAndCheckCLUZFiles(limboSetupObject)
+
     if limboSetupObject.setupStatus == 'files_checked':
         saveSuccessfulBool = True
         copyLimboParametersToSetupObject(setupObject, limboSetupObject)
@@ -98,12 +120,19 @@ def copyLimboParametersToSetupObject(setupObject, limboSetupObject):
 
 
 def saveAsSetupFileCode(setupDialog, setupObject, newSetupFilePath):
+    if setupDialog.mzonesRadioButton.isChecked():
+        setupObject.analysisType = 'MarxanWithZones'
+    else:
+        setupObject.analysisType = 'Marxan'
     setupObject.decimalPlaces = int(setupDialog.precComboBox.currentText())
     setupObject.marxanPath = setupDialog.marxanLineEdit.text()
     setupObject.inputPath = setupDialog.inputLineEdit.text()
     setupObject.outputPath = setupDialog.outputLineEdit.text()
     setupObject.puPath = setupDialog.puLineEdit.text()
     setupObject.targetPath = setupDialog.targetLineEdit.text()
+    if setupObject.analysisType == 'MarxanWithZones':
+        setupObject.zonesPath = setupDialog.zonesLineEdit.text()
+
     setupObject.setupPath = newSetupFilePath
 
     setupObject = checkStatusObjectValues(setupObject)

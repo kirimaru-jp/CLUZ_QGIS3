@@ -27,7 +27,6 @@ from .cluz_functions4 import makeRestrictedRangeDict
 from .cluz_messages import clearProgressBar, makeProgressBar, warningMessage
 
 
-
 def returnSpecifiedStatusPUIDSet(setupObject, specifiedStatusSet):
     puLayer = QgsVectorLayer(setupObject.puPath, "Planning units", "ogr")
     provider = puLayer.dataProvider()

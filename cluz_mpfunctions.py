@@ -21,7 +21,7 @@
 import copy
 import csv
 
-from .cluz_messages import clearProgressBar, makeProgressBar, warningMessage
+from .cluz_messages import clearProgressBar, makeProgressBar, criticalMessage
 
 
 def createMPRunningUnitDictionary(minpatchDataDict, marxanSolLocationString):
@@ -175,9 +175,9 @@ def calcPatchSizeThreshold(zoneDict, patchDict, patchID):
     return patchSizeThreshold
 
 
-def addMPPatches(minpatchDataDict, runningUnitDict, marxanFileName):
+def addMPPatches(setupObject, minpatchDataDict, runningUnitDict, marxanFileName):
     continueBool = True
-    featAmountConsDict = makeMPFeatAmountConsDict(minpatchDataDict, runningUnitDict)
+    featAmountConsDict = makeMPFeatAmountConsDict(setupObject, minpatchDataDict, runningUnitDict)
     unmetTargetIDSet = makeMPUnmetTargetIDSet(featAmountConsDict, minpatchDataDict)
     puSelectionSet = makeMPPUSelectionSet(minpatchDataDict, runningUnitDict)
     puPatchSetDict = makeMPPUPatchSetDict(puSelectionSet, minpatchDataDict)
@@ -191,11 +191,9 @@ def addMPPatches(minpatchDataDict, runningUnitDict, marxanFileName):
         progressBar.setValue((rowCount/rowTotalCount) * 100)
 
         puPatchScoreDict = makePUPatchScoreDict(minpatchDataDict, featAmountConsDict, allPUPatchAbundDict, puSelectionSet)
-        puID = returnBestPU(puPatchScoreDict)
+        puID, puSelectionSet = returnBestPU(puPatchScoreDict)
 
         if puID == -1:
-            featIDListString = makeFeatureIDListOfUnmeetableTargetsString(unmetTargetIDSet)
-            warningMessage('Target error: ', 'targets for the following features cannot be met: ' + featIDListString +'. This occurs when there is not enough of the relevant features found in patches with the specified minimum area. MinPatch has been terminated.')
             continueBool = False
             break
 
@@ -203,11 +201,11 @@ def addMPPatches(minpatchDataDict, runningUnitDict, marxanFileName):
         puSelectionSet.remove(puID)
 
         allPUPatchAbundDict = updatePUPatchAbundDict(allPUPatchAbundDict, minpatchDataDict, runningUnitDict, puSelectionSet, puPatchSetDict, unmetTargetIDSet, puID)
-        featAmountConsDict = makeMPFeatAmountConsDict(minpatchDataDict, runningUnitDict)
+        featAmountConsDict = makeMPFeatAmountConsDict(setupObject, minpatchDataDict, runningUnitDict)
         unmetTargetIDSet = makeMPUnmetTargetIDSet(featAmountConsDict, minpatchDataDict)
     clearProgressBar()
 
-    return runningUnitDict, continueBool
+    return runningUnitDict, featAmountConsDict, unmetTargetIDSet, continueBool
 
 
 def makeFeatureIDListOfUnmeetableTargetsString(unmetTargetIDSet):
@@ -220,7 +218,7 @@ def makeFeatureIDListOfUnmeetableTargetsString(unmetTargetIDSet):
     return finalFeatIDListString
 
 
-def makeMPFeatAmountConsDict(minpatchDataDict, unitDict):
+def makeMPFeatAmountConsDict(setupObject, minpatchDataDict, unitDict):
     targetDict = minpatchDataDict['targetDictionary']
     abundanceMatrixDict = minpatchDataDict['abundanceMatrixDictionary']
 
@@ -234,7 +232,8 @@ def makeMPFeatAmountConsDict(minpatchDataDict, unitDict):
                 featAmount = puAbundDict[featID]
                 conTotalAmount = featAmountConsDict[featID]
                 conTotalAmount += featAmount
-                featAmountConsDict[featID] = conTotalAmount
+                finalConTotalAmount = round(conTotalAmount, setupObject.decimalPlaces)
+                featAmountConsDict[featID] = finalConTotalAmount
 
     return featAmountConsDict
 
@@ -362,16 +361,19 @@ def calcPUPatchFeatureScore(targetDict, featAmountConsDict, puPatchAbundDict, fe
 
 
 def returnBestPU(puPatchScoreDictionary):
+    puSelectionSet = set()
     puIDValue = -1
     runningScore = 0
-    for puValue in puPatchScoreDictionary:
-        scoreValue = puPatchScoreDictionary[puValue]
+    for puID in puPatchScoreDictionary:
+        scoreValue = puPatchScoreDictionary[puID]
+        if scoreValue > 0:
+            puSelectionSet.add(puID)
         #If joint equal then always selects first PU in list
         if scoreValue > runningScore:
             runningScore = scoreValue
-            puIDValue = puValue
+            puIDValue = puID
 
-    return puIDValue
+    return puIDValue, puSelectionSet
 
 
 def addPatch(minpatchDataDictionary, unitDictionary, puIDValue):
@@ -418,11 +420,11 @@ def updatePUPatchAbundDict(allPUPatchAbundDict, minpatchDataDict, unitDict, puSe
     return allPUPatchAbundDict
 
 
-def runSimWhittle(runningUnitDict, minpatchDataDict, marxanFileName):
+def runSimWhittle(setupObject, runningUnitDict, minpatchDataDict, marxanFileName):
     patchDict = makeMPPatchDict(runningUnitDict, minpatchDataDict)
     rawEdgePUIDSet = makeEdgePUIDSet(runningUnitDict, minpatchDataDict)
     puPatchIDDict = makePUPatchIDDict(runningUnitDict, patchDict)
-    featAmountConsDict = makeMPFeatAmountConsDict(minpatchDataDict, runningUnitDict)
+    featAmountConsDict = makeMPFeatAmountConsDict(setupObject, minpatchDataDict, runningUnitDict)
     keystonePUIDSet = set()     #Keystone list is of PUs that can't be removed without affecting patch size or targets
     costlyPUIDSet = set()       #List of PUs that increases portfolio so shouldn't be removed. PUs REMOVED WHEN NEIGHBOURING PLANNING UNITS ARE WHITTLED.
 
@@ -436,7 +438,7 @@ def runSimWhittle(runningUnitDict, minpatchDataDict, marxanFileName):
         whittlePUID, keystonePUIDSet, costlyPUIDSet = returnWhittlePUID_KeystoneSet(minpatchDataDict, runningUnitDict, patchDict, puPatchIDDict, whittleScoreDict, keystonePUIDSet, costlyPUIDSet)
         if whittlePUID != 'blank':
             runningUnitDict = removeWhittlePU(runningUnitDict, whittlePUID)
-            featAmountConsDict = makeMPFeatAmountConsDict(minpatchDataDict, runningUnitDict)
+            featAmountConsDict = makeMPFeatAmountConsDict(setupObject, minpatchDataDict, runningUnitDict)
             patchDict = makeMPPatchDict(runningUnitDict, minpatchDataDict)
             puPatchIDDict = makePUPatchIDDict(runningUnitDict, patchDict)
 

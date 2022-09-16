@@ -25,7 +25,8 @@ import os
 
 from .cluz_messages import warningMessage, successMessage
 from .cluz_make_file_dicts import makePuvspr2DatFile, addFeaturesToTargetCsvFile, makeTargetDict, makeAbundancePUKeyDict, makeSporderDatFile
-from .cluz_functions2 import addAbundDictToAbundPUKeyDict, createTargetPuvspr2SporderFiles, addFeaturesFromAddAbundDictToPuvspr2File, createPULayer, makeVecAddAbundDict
+from .cluz_functions2 import addAbundDictToAbundPUKeyDict, createTargetPuvspr2SporderFiles, addFeaturesFromAddAbundDictToPuvspr2File, createPULayer, makeVecAddAbundDict, makeRasterAddAbundDict
+
 
 ########################## Make new CLUZ files #########################
 
@@ -120,21 +121,24 @@ def checkTargetTable(createDialog):
 ##################### Import vec data #################################
 
 def checkAddLayerListConvertVecDialog(ConvertVecDialog):
-    layerNameList = loadThemesList()
+    layerNameList = loadVecThemesList()
     if len(layerNameList) == 0:
         warningMessage('No suitable layers', 'Please add to the project the polyline or polygon shapefiles that you want to import.')
         ConvertVecDialog.okButton.setEnabled(False)
     ConvertVecDialog.selectListWidget.addItems(layerNameList)
 
 
-def loadThemesList():
+def loadVecThemesList():
     listMapItems = QgsProject.instance().mapLayers()
     layerNameList = list()
     for nameCode, layer in listMapItems.items():
         layerName = layer.name()
-        layerGeomType = layer.geometryType()
-        if layerName != "Planning units" and layerGeomType != 0:
-            layerNameList.append(str(layerName))
+        try:
+            layerGeomType = layer.geometryType()
+            if layerName != "Planning units" and layerGeomType != 0:
+                layerNameList.append(str(layerName))
+        except AttributeError:
+            pass
 
     return layerNameList
 
@@ -170,8 +174,31 @@ def checkLayerFactorConvertVec(ConvertVecDialog):
                     ConvertVecDialog.close()
                     warningMessage('Layer format error' + aLayerName, 'The specified ID field ' + idFieldName + ' does not contain integer values.')
                     layerFactorCheck = False
-                    
+
     return layerList, layerFactorCheck
+
+
+def checkLayerHasSameCrsAsPULayer(ConvertVecDialog, setupObject):
+    sameProjectionCheck = True
+    layerList = list()
+    puLayerCrs = QgsVectorLayer(setupObject.puPath, 'Planning units', 'ogr').crs().authid()
+
+    selectedLayerNameList = [item.text() for item in ConvertVecDialog.selectListWidget.selectedItems()]
+    listMapItems = QgsProject.instance().mapLayers()
+    for nameCode, layer in listMapItems.items():
+        layerName = layer.name()
+        if layerName in selectedLayerNameList:
+            layerList.append(layer)
+
+    for aLayer in layerList:
+        aLayerName = aLayer.name()
+        featureLayerCrs = aLayer.crs().authid()
+        if featureLayerCrs != puLayerCrs:
+            ConvertVecDialog.close()
+            warningMessage('Layer format error with ' + aLayerName, 'QGIS can only extract the data from this layer if it has the same projection system as the planning unit theme, so please reproject it.')
+            sameProjectionCheck = False
+
+    return sameProjectionCheck
 
 
 def checkConvFactorConvertVec(ConvertVecDialog):
@@ -186,7 +213,7 @@ def checkConvFactorConvertVec(ConvertVecDialog):
 
         except ValueError:
             ConvertVecDialog.close()
-            warningMessage('Incorrect conversion value', 'The conversion value must be a number greater than 0.')
+            warningMessage('Incorrect conversion value type', 'The conversion value must be a number greater than 0.')
             convFactorCheck = False
 
     return convFactorCheck
@@ -222,7 +249,7 @@ def produceWarningMessageAboutFeatsAlreadyInAbundTab(ConvertVecDialog, existingI
     warningMessage('Existing features', 'The abundance table already contains features with ID values of ' + finalListText + '. This process will terminate without adding the new values.')
 
 
-def makeErrorLayerString(errorLayerList):
+def makeVectorErrorLayerString(errorLayerList):
     rawErrorLayerString = 'please check your input data, as QGIS was unable to intersect the planning unit layer with the following data layers: '
     for aLayerName in errorLayerList:
         rawErrorLayerString += aLayerName + ' ,'
@@ -231,6 +258,95 @@ def makeErrorLayerString(errorLayerList):
 
     return errorLayerString
 
+###############################Import raster data ##############################
+
+def checkAddLayerListConvertRasterDialog(ConvertRasterDialog):
+    layerNameList = loadRasterThemesList()
+    if len(layerNameList) == 0:
+        warningMessage('No suitable layers ', 'Please add the raster layers that you want to import to the project. They must be single-band integer raster layers.')
+        ConvertRasterDialog.okButton.setEnabled(False)
+    ConvertRasterDialog.selectListWidget.addItems(layerNameList)
+
+
+def loadRasterThemesList():
+    listMapItems = QgsProject.instance().mapLayers()
+    layerNameList = list()
+    for nameCode, layer in listMapItems.items():
+        layerName = layer.name()
+        try:
+            layerBandCount = layer.bandCount()
+            if layerBandCount == 1:
+                layerNameList.append(str(layerName))
+        except AttributeError:
+            pass
+
+    return layerNameList
+
+
+def checkLayerFactorConvertRaster(ConvertRasterDialog):
+    layerFactorCheck = True
+    layerList = list()
+
+    selectedLayerNameList = [item.text() for item in ConvertRasterDialog.selectListWidget.selectedItems()]
+    if len(selectedLayerNameList) == 0:
+        ConvertRasterDialog.close()
+        warningMessage('No layers selected', 'No layers were selected.')
+        layerFactorCheck = False
+    else:
+        listMapItems = QgsProject.instance().mapLayers()
+        for nameCode, layer in listMapItems.items():
+            layerName = layer.name()
+            if layerName in selectedLayerNameList:
+                layerList.append(layer)
+
+    return layerList, layerFactorCheck
+
+
+def checkConvFactorConvertRaster(ConvertRasterDialog):
+    convFactorCheck = True
+    if ConvertRasterDialog.userRadioButton.isChecked():
+        try:
+            convFactor = float(ConvertRasterDialog.convLineEdit.text())
+            if convFactor <= 0:
+                ConvertRasterDialog.close()
+                warningMessage('Incorrect conversion value', 'The conversion value must be a number greater than 0.')
+                convFactorCheck = False
+
+        except ValueError:
+            ConvertRasterDialog.close()
+            warningMessage('Incorrect conversion value type', 'The conversion value must be a number greater than 0.')
+            convFactorCheck = False
+
+    return convFactorCheck
+
+
+def create_UpdateAbundDataFromRasterFile(RasterVecDialog, setupObject, layerList):
+    convFactor = float(RasterVecDialog.convLineEdit.text())
+    addAbundDict, addFeatIDList, errorLayerList = makeRasterAddAbundDict(setupObject, layerList, convFactor)
+    existingIDSet = set(addFeatIDList).intersection(set(setupObject.targetDict.keys()))
+    if len(existingIDSet) > 0:
+        produceWarningMessageAboutFeatsAlreadyInAbundTab(RasterVecDialog, existingIDSet)
+    else:
+        if setupObject.abundPUKeyDict == 'blank':
+            setupObject.abundPUKeyDict = makeAbundancePUKeyDict(setupObject)
+        addFeaturesFromAddAbundDictToPuvspr2File(setupObject, addAbundDict)
+        setupObject.abundPUKeyDict = makeAbundancePUKeyDict(setupObject)
+        makeSporderDatFile(setupObject)
+
+        addFeaturesToTargetCsvFile(setupObject, addAbundDict, addFeatIDList)
+        setupObject.targetDict = makeTargetDict(setupObject)
+        RasterVecDialog.close()
+
+    return errorLayerList
+
+def makeRasterErrorLayerString(errorLayerList):
+    rawErrorLayerString = 'the input raster data must only contain positive integer values (zeros are ignored), so the following layers are not valid: '
+    for aLayerName in errorLayerList:
+        rawErrorLayerString += aLayerName + ' ,'
+
+    errorLayerString = rawErrorLayerString[0:-2]
+
+    return errorLayerString
 
 ###############################Import csv data ##############################
 

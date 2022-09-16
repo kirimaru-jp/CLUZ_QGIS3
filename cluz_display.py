@@ -25,6 +25,14 @@ from qgis.utils import iface
 import os
 
 
+def makePULayerActive(setupObject):
+    try:
+        puLayer = QgsProject.instance().mapLayersByName('Planning units')[0]
+        iface.setActiveLayer(puLayer)
+    except IndexError:
+        pass
+
+
 def returnLowestUnusedFileNameNumber(dirPath, fileNameBase, extTypeText):
     fileNameNumber = 1
     while os.path.exists(dirPath + os.sep + fileNameBase + str(fileNameNumber) + extTypeText):
@@ -73,39 +81,40 @@ def updatePULayerToShowChangesByShiftingExtent():# This is a way of refreshing P
     canvasExtent = iface.mapCanvas().extent()
     extMinX, extMaxX = canvasExtent.xMinimum(), canvasExtent.xMaximum()
     extMinY, extMaxY = canvasExtent.yMinimum(), canvasExtent.yMaximum()
-    xShift = (extMaxX - extMinX) * 0.005
+    xShift = (extMaxX - extMinX) * 0.0001
     shiftMinX, shiftMaxX = extMinX + xShift, extMaxX + xShift
     iface.mapCanvas().setExtent(QgsRectangle(shiftMinX, extMinY, shiftMaxX, extMaxY))
     iface.mapCanvas().refresh()
 
 
 def makePULayerLegendCategory():
-    categoryList = []
+    categoryList = list()
+
     #Set category 1
-    cat1Value = 'Conserved'
-    cat1Label = 'Conserved'
-    cat1Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#006633', 'color_border': '#006633'})
+    cat1Value = 'Available'
+    cat1Label = 'Available'
+    cat1Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#99ff99', 'color_border': '#99ff99'})
     myCat1 = QgsRendererCategory(cat1Value, cat1Symbol, cat1Label)
     categoryList.append(myCat1)
 
     #Set category 2
-    cat2Value = 'Excluded'
-    cat2Label = 'Excluded'
-    cat2Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#730083', 'color_border': '#730083'})
+    cat2Value = 'Earmarked'
+    cat2Label = 'Earmarked'
+    cat2Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#33cc33', 'color_border': '#33cc33'})
     myCat2 = QgsRendererCategory(cat2Value, cat2Symbol, cat2Label)
     categoryList.append(myCat2)
 
     #Set category 3
-    cat3Value = 'Available'
-    cat3Label = 'Available'
-    cat3Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#99ff99', 'color_border': '#99ff99'})
+    cat3Value = 'Conserved'
+    cat3Label = 'Conserved'
+    cat3Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#006633', 'color_border': '#006633'})
     myCat3 = QgsRendererCategory(cat3Value, cat3Symbol, cat3Label)
     categoryList.append(myCat3)
 
     #Set category 4
-    cat4Value = 'Earmarked'
-    cat4Label = 'Earmarked'
-    cat4Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#33cc33', 'color_border': '#33cc33'})
+    cat4Value = 'Excluded'
+    cat4Label = 'Excluded'
+    cat4Symbol = QgsFillSymbol.createSimple({'style': 'solid', 'color': '#730083', 'color_border': '#730083'})
     myCat4 = QgsRendererCategory(cat4Value, cat4Symbol, cat4Label)
     categoryList.append(myCat4)
 

@@ -20,7 +20,7 @@
 
 from qgis.core import QgsVectorLayer
 
-from .cluz_setup import returnFeatIDSetFromAbundPUKeyDict
+from .cluz_checkup import returnFeatIDSetFromAbundPUKeyDict
 from .cluz_functions3 import remFeaturesFromPuvspr2, remFeaturesFromTargetCsv_Dict
 from .cluz_make_file_dicts import makeTargetDict, makeAbundancePUKeyDict, makeSporderDatFile
 from .cluz_messages import criticalMessage, successMessage

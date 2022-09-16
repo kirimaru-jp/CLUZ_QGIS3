@@ -166,6 +166,101 @@ def calcFeatPolygonAreaInPU(outputFeature, convFactor, decPrec):
 
     return finalShapeAmount
 
+####################### Import raster file ###############################
+
+def makeRasterAddAbundDict(setupObject, layerList, convFactor):
+    addAbundDict = dict()
+    addFeatIDSet = set()
+    warningMessage('Invalid values in raster layer', 'The raster layer values must all be positive integers (Zero values are ignored) so data from ' + 'b' + 'has been ignored.')
+    errorLayerList = list()
+    puLayer = QgsVectorLayer(setupObject.puPath, 'Planning units', 'ogr')
+
+    for aLayer in layerList:
+        layerName = aLayer.name()
+        layerPixelWidth = aLayer.rasterUnitsPerPixelX()
+        layerPixelHeight = aLayer.rasterUnitsPerPixelY()
+        layerPixelArea = layerPixelWidth * layerPixelHeight
+        infoMessage('Processing files:', 'calculating Zonal Histogram with ' + layerName + '...')
+        try:
+            outputLayer = makeZonalHistogramOutputLayer(puLayer, aLayer)
+            outputZonalHistogramFeatIDFieldList = makeZonalHistogramOutputFeatIDFieldList(outputLayer)
+            rasterValuesAreValidBool = checkRasterValuesAreValidBool(outputZonalHistogramFeatIDFieldList)
+            if rasterValuesAreValidBool:
+                addAbundDict, addFeatIDSet = makeAddAbundDictFromRasterFile(setupObject, outputLayer, addAbundDict, addFeatIDSet, convFactor, layerPixelArea, outputZonalHistogramFeatIDFieldList)
+            else:
+                errorLayerList.append(layerName)
+        except QgsProcessingException:
+            errorLayerList.append(layerName)
+
+    addFeatIDList = list(addFeatIDSet)
+    addFeatIDList.sort()
+
+    return addAbundDict, addFeatIDList, errorLayerList
+
+
+def makeZonalHistogramOutputLayer(puLayer, aLayer):
+    feedback = QgsProcessingFeedback()
+    zonalHistogramParamsDict = { 'COLUMN_PREFIX' : 'ClZHi_', 'INPUT_RASTER' : aLayer, 'INPUT_VECTOR' : puLayer, 'OUTPUT' : 'TEMPORARY_OUTPUT', 'RASTER_BAND' : 1 }
+    zonalHistogramResults = processing.run('native:zonalhistogram', zonalHistogramParamsDict, feedback=feedback)
+    outputLayer = zonalHistogramResults['OUTPUT']
+
+    return outputLayer
+
+
+def makeZonalHistogramOutputFeatIDFieldList(outputLayer):
+    outputZonalHistogramFeatIDFieldList = list()
+    provider = outputLayer.dataProvider()
+    fieldList = provider.fields()
+    for aField in fieldList:
+        fieldName = aField.name()
+        if fieldName[0:6] == 'ClZHi_':
+            if fieldName != 'ClZHi_0' and fieldName != 'ClZHi_NODATA':
+                outputZonalHistogramFeatIDFieldList.append(fieldName)
+
+    return outputZonalHistogramFeatIDFieldList
+
+
+def checkRasterValuesAreValidBool(outputZonalHistogramFeatIDFieldList):
+    rasterValuesAreValidBool = True
+
+    for featIDFieldName in outputZonalHistogramFeatIDFieldList:
+        featIDString = featIDFieldName.replace('ClZHi_', '')
+        try:
+            featID = int(featIDString)
+            if featID < 0:
+                rasterValuesAreValidBool = False
+
+        except ValueError:
+            rasterValuesAreValidBool = False
+    warningMessage('Invalid values in raster layer', 'The raster layer values must all be positive integers (Zero values are ignored) so data from ' + 'a' + 'has been ignored.')
+
+    return rasterValuesAreValidBool
+
+
+def makeAddAbundDictFromRasterFile(setupObject, outputLayer, addAbundDict, addFeatIDSet, convFactor, layerPixelArea, outputZonalHistogramFeatIDFieldList):
+    decPrec = setupObject.decimalPlaces
+    outputIDField = outputLayer.fields().indexFromName('Unit_ID')
+    outputFeatures = outputLayer.getFeatures()
+
+    for outputFeature in outputFeatures:
+        outputAttributes = outputFeature.attributes()
+        unitID = outputAttributes[outputIDField]
+        for featIDFieldName in outputZonalHistogramFeatIDFieldList:
+            outputFeatField = outputLayer.fields().indexFromName(featIDFieldName)
+            featID = int(featIDFieldName.replace('ClZHi_', ''))
+            addFeatIDSet.add(featID)
+            rawFeatAmount = outputAttributes[outputFeatField] * layerPixelArea
+            finalFeatAmount = round(rawFeatAmount / convFactor, decPrec)
+            if finalFeatAmount > 0:
+                try:
+                    puAddAbundDict = addAbundDict[unitID]
+                except KeyError:
+                    puAddAbundDict = dict()
+                puAddAbundDict[featID] = finalFeatAmount
+                addAbundDict[unitID] = puAddAbundDict
+
+    return addAbundDict, addFeatIDSet
+
 
 ####################### Import csv file ###############################
 
@@ -264,7 +359,7 @@ def createTargetPuvspr2SporderFiles(createDialog):
 
     with open(targetPath,'w', newline='') as targetFile:
         targetWriter = csv.writer(targetFile)
-        targetWriter.writerow(['Id', 'Name', 'Type', 'Target', 'Spf', 'Conserved', 'Total', 'PC_target'])
+        targetWriter.writerow(['Id', 'Name', 'Type', 'Target', 'Spf', 'Ear+Cons', 'Total', 'PC_target'])
 
     with open(inputPath + os.sep + 'puvspr2.dat','w', newline='') as puvspr2File:
         puvspr2Writer = csv.writer(puvspr2File)

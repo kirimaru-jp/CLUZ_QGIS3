@@ -56,7 +56,7 @@ def makeTargetDictRowFeatList(aRow, headerList):
     featType = int(aRow[headerList.index('type')])
     featSpf = float(aRow[headerList.index('spf')])
     featTarget = float(aRow[headerList.index('target')])
-    featConserved = float(aRow[headerList.index('conserved')])
+    featConserved = float(aRow[headerList.index('ear+cons')])
     featTotal = float(aRow[headerList.index('total')])
     featPc_Target = float(aRow[headerList.index('pc_target')])
     featList = [featName, featType, featSpf, featTarget, featConserved, featTotal, featPc_Target]
@@ -272,7 +272,6 @@ def makeSporderDatFile(setupObject):
     sporderDict = makeSporderDict(setupObject)
     featList = list(sporderDict.keys())
     featList.sort()
-
     if setupObject.abundPUKeyDict == 'blank':
         setupObject.abundPUKeyDict = makeAbundancePUKeyDict(setupObject)
     inputPathName = setupObject.inputPath
@@ -333,9 +332,34 @@ def updateTargetCSVFromTargetDict(setupObject, targetDict):
             featTarget = float(aRow[lowerHeaderList.index('target')])
             pcTarget = returnPCTargetValueForTargetTable(targetDict, featID, featTarget, decPrec)
 
-            aRow[lowerHeaderList.index('conserved')] = targetDict[featID][4]
+            aRow[lowerHeaderList.index('ear+cons')] = targetDict[featID][4]
             aRow[lowerHeaderList.index('total')] = targetDict[featID][5]
             aRow[lowerHeaderList.index('pc_target')] = pcTarget
+            textRows.append(aRow)
+
+    with open(targetCSVFilePath,'w', newline='') as out_file:
+        targetWriter = csv.writer(out_file)
+        for bRow in textRows:
+            targetWriter.writerow(bRow)
+
+
+def changeConservedFieldNameToEarCons(setupObject):
+    targetCSVFilePath = setupObject.targetPath
+    textRows = list()
+    with open(targetCSVFilePath, 'rt') as in_file:
+        targetReader = csv.reader(in_file)
+        origHeaderList = next(targetReader)
+        newHeaderList = list()
+        for aHeader in origHeaderList:
+            if aHeader == 'Conserved':
+                newHeaderList.append('Ear+Cons')
+            elif aHeader == 'conserved':
+                newHeaderList.append('ear+cons')
+            else:
+                newHeaderList.append(aHeader)
+        textRows.append(newHeaderList)
+
+        for aRow in targetReader:
             textRows.append(aRow)
 
     with open(targetCSVFilePath,'w', newline='') as out_file:
@@ -428,7 +452,7 @@ def makeNewRowTargetCSVFromAddTargetList(targetFileHeaderList, addTargetDict, fe
             newRowList[aTargetHeaderCol] = str(featID)
         elif aTargetHeaderName.lower() == 'name':
             newRowList[aTargetHeaderCol] = 'blank'
-        elif aTargetHeaderName.lower() == 'conserved':
+        elif aTargetHeaderName.lower() == 'ear+cons':
             newRowList[aTargetHeaderCol] = str(featCon)
         elif aTargetHeaderName.lower() == 'total':
             newRowList[aTargetHeaderCol] = str(featTotal)

@@ -27,7 +27,7 @@ import math
 import time
 import shutil
 import statistics
-import tempfile
+
 
 from .cluz_messages import clearProgressBar, emptyPolgyonPUIDSetErrorMessage, makeProgressBar, warningMessage, criticalMessage
 from .cluz_make_file_dicts import writeBoundDatFile
@@ -226,7 +226,7 @@ def makeNewPUVertexSet(puGeom):
     for aPolygon in polygonList:
         polyXYList = list()
         for aQgsPointXY in aPolygon:
-            polyXYList.append((aQgsPointXY.x(), aQgsPointXY.y()))
+            polyXYList.append((aQgsPointXY.x(), aQgsPointXY.y())) #THIS FALLS OVER WHEN PU FILE HAS TOPOLOGY ERRORS
         aPolyPointList.append(polyXYList)
 
     puVertexSet = convertPolygonPointList2VertexSet(aPolyPointList)
@@ -481,17 +481,13 @@ def makeParallelAnalysesDetailsList(marxanParameterDict):
     return parallelAnalysesDetailsList
 
 
-def marxanUpdateSetupObject(setupObject, marxanParameterDict):
+def marxanUpdateSetupObject(marxanDialog, setupObject, marxanParameterDict):
     setupObject.outputName = marxanParameterDict['outputName']
     setupObject.numIter = marxanParameterDict['numIter']
     setupObject.numRuns = marxanParameterDict['numRun']
     setupObject.blmValue = marxanParameterDict['blmValue']
-    if marxanParameterDict['blmValue'] > 0:
-        blmBool = True
-    else:
-        blmBool = False
-    setupObject.boundFlag = blmBool
-    setupObject.extraOutputsFlag = marxanParameterDict['extraOutputsBool']
+    setupObject.boundFlag = marxanDialog.boundCheckBox.isChecked()
+    setupObject.extraOutputsFlag = marxanDialog.extraCheckBox.isChecked()
     setupObject.startProp = marxanParameterDict['initialProp']
     setupObject.targetProp = marxanParameterDict['missingProp']
 

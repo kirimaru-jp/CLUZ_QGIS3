@@ -35,7 +35,7 @@ from .cluz_messages import warningMessage
 from .cluz_dialog3_code import returnConTotDict, updateConTotFieldsTargetDict
 
 
-class QCustomTableWidgetItem (QtWidgets.QTableWidgetItem):
+class QCustomTableWidgetItem (QtWidgets.QTableWidgetItem): # Designed so column sort is based on value of number, not string of number
     def __init__ (self, value):
         super(QCustomTableWidgetItem, self).__init__(str('%s' % value))
 
@@ -65,7 +65,7 @@ def addTargetTableData(targetTable, setupObject):
     for aRow in targetDialogRowList:
         pcValue = aRow[lowerHeaderList.index('pc_target')]
         targetValue = float(aRow[lowerHeaderList.index('target')])
-        consValue = float(aRow[lowerHeaderList.index('conserved')])
+        consValue = float(aRow[lowerHeaderList.index('ear+cons')])
 
         if targetValue <= 0:
             limboPCValue = '-1'
@@ -104,7 +104,7 @@ def addTargetTableRow(targetTable, setupObject, aRow, targetHeaderList, decPrecH
             targTableItem = QTableWidgetItem(str(tableValue))
         if headerName == 'target':
             targetValue = tableValue
-        elif headerName == 'conserved':
+        elif headerName == 'ear+cons':
             conservedValue = tableValue
         if headerName == 'pc_target' and str(tableValue) == '-1':
             targTableItem.setForeground(QColor.fromRgb(128, 128, 128))

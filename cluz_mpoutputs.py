@@ -334,3 +334,14 @@ def makeMPZonefeatureOutputDict(minpatchDataDict, featList, zoneFeaturePropStats
         zonefeatureOutputDict[zoneID] = zoneDetailsDict
 
     return zonefeatureOutputDict
+
+
+def printUnderRepFeatures(setupObject, featAmountConsDict, unmetTargetIDSet, errorFileName):
+    with open(errorFileName, 'w', newline='') as errorFile:
+        errorWriter = csv.writer(errorFile)
+        errorWriter.writerow(['Feat_ID', 'Total amount available in patches', 'Target'])
+        for featID in unmetTargetIDSet:
+            rowList = [featID]
+            rowList.append(featAmountConsDict[featID])
+            rowList.append(setupObject.targetDict[featID][3])
+            errorWriter.writerow(rowList)
