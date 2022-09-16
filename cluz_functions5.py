@@ -499,6 +499,7 @@ def makeMarxanBatFile(setupObject):
     marxanBatFileName = marxanFullName.replace('.exe', '.bat')
     with open(marxanBatFileName,'w', newline='') as batFile:
         batWriter = csv.writer(batFile)
+        # Change directory to where Marxan is installed
         batWriter.writerow([ os.path.splitdrive(marxanFullName)[0] ])
         batWriter.writerow(['cd ' + os.path.dirname(marxanFullName)])
         batWriter.writerow([marxanFullName])
